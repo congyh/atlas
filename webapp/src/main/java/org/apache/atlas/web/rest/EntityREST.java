@@ -419,6 +419,10 @@ public class EntityREST {
     }
 
     /**
+     * Note: 这个调用是为某一个特定的entity添加classifications的
+     *
+     * Note: 关于添加字段自动添加上线时间的需求可以考虑调用这个接口.
+     *
      * Adds classifications to an existing entity represented by a guid.
      * @param guid globally unique identifier for the entity
      */
@@ -475,6 +479,10 @@ public class EntityREST {
     }
 
     /**
+     * Note: 这个调用是修改某一个特定的entity的classifications的
+     *
+     * Note: 关于添加字段自动添加上线时间的需求可以考虑调用这个接口.
+     *
      * Updates classifications to an existing entity represented by a guid.
      * @param  guid globally unique identifier for the entity
      * @return classification for the given entity guid

@@ -26,8 +26,12 @@ import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
 
+/**
+ * Note: 用于保存一次接收通知的上下文context, 用于后续批量进行图更新
+ */
 public class EntityMutationContext {
     private EntityGraphDiscoveryContext  context = null;
+    // Note: created是自动添加字段上线时间这个classification时应该重点关注的
     private final List<AtlasEntity>            entitiesCreated = new ArrayList<>();
     private final List<AtlasEntity>            entitiesUpdated = new ArrayList<>();
     private final Map<String, AtlasEntityType> entityVsType    = new HashMap<>();

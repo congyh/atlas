@@ -45,6 +45,8 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * A base class for atlas hooks.
+ *
+ * Note: 主要做的事就是加载Hook所需要的和Atlas相关的配置.
  */
 public abstract class AtlasHook {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasHook.class);
@@ -73,6 +75,7 @@ public abstract class AtlasHook {
 
     static {
         try {
+            // Note: 各种Hook都是在这里初始化配置.
             atlasProperties = ApplicationProperties.get();
         } catch (Exception e) {
             LOG.info("Failed to load application properties", e);
@@ -143,6 +146,8 @@ public abstract class AtlasHook {
     }
 
     /**
+     * Note: 这是Atlas向外界notify lineage的核心方法
+     *
      * Notify atlas of the entity through message. The entity can be a
      * complex entity with reference to other entities.
      * De-duping of entities is done on server side depending on the
@@ -189,6 +194,8 @@ public abstract class AtlasHook {
             }
 
             try {
+                // Note: 这里是实际的发送操作
+                // TODO: 具体怎么发送出去的还待看
                 if (ugi == null) {
                     notificationInterface.send(NotificationInterface.NotificationType.HOOK, messages);
                 } else {

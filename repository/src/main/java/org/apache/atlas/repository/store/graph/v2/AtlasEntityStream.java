@@ -23,6 +23,9 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 
 import java.util.Iterator;
 
+/**
+ * Note: 进一步将从Kafka接受的信息进行包装.
+ */
 public class AtlasEntityStream implements EntityStream {
     protected final AtlasEntitiesWithExtInfo entitiesWithExtInfo;
     protected final EntityStream             entityStream;

@@ -37,6 +37,7 @@ public enum HiveDataTypes {
     HIVE_DB,
     HIVE_STORAGEDESC,
     HIVE_TABLE,
+    // Note: TODO: 重点关注HIVE_COLUMN
     HIVE_COLUMN,
     HIVE_PARTITION,
     HIVE_INDEX,

@@ -46,7 +46,19 @@ import static org.apache.atlas.hive.hook.events.BaseHiveEvent.ATTRIBUTE_QUALIFIE
 import static org.apache.atlas.hive.hook.events.BaseHiveEvent.HIVE_TYPE_DB;
 import static org.apache.atlas.hive.hook.events.BaseHiveEvent.HIVE_TYPE_TABLE;
 
-
+/**
+ * Note: ExecuteWithHookContext是Hive中定义的标记接口Hook的子接口,
+ * 意即和HookContext有交互的Hook.
+ * 这个类是用于注册到Hive Hook的post的生命周期上的, 由Hive执行过程中负责回调.
+ *
+ * 包括Kafka发送Lineage信息的Producer也是在这里启动的.
+ *
+ * 注意: Hive-20633有Lineage解析错误(在row number over的情况下source表的所有列都会被target的每一列
+ * 添加依赖关系)的情况, 在hive2以上是没有的.
+ *
+ * https://issues.apache.org/jira/browse/HIVE-20633
+ * https://issues.apache.org/jira/browse/ATLAS-2891
+ */
 public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     private static final Logger LOG = LoggerFactory.getLogger(HiveHook.class);
 
@@ -140,6 +152,18 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     public HiveHook() {
     }
 
+    /**
+     * Note: Atlas Hive Hook程序的入口.
+     *
+     * 总流程如下:
+     *
+     * 1. 由Hive端负责回调, 传入HookContext.
+     * 2. 根据Hive动作类型, 对上游的Lineage信息进行初步的筛选, 构建需要解析的Lineage列表
+     * 3. 将Lineage列表封装成Notification标准类型, 由Kafka类型的实现类负责发送出去.
+     *
+     * @param hookContext
+     * @throws Exception
+     */
     @Override
     public void run(HookContext hookContext) throws Exception {
         if (LOG.isDebugEnabled()) {
@@ -153,10 +177,15 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         }
 
         try {
+            // Note: 获取Hive端触发Hook的操作类型
             HiveOperation        oper    = OPERATION_MAP.get(hookContext.getOperationName());
+            // Note: 初始化了AtlasHiveHookContext
+            // Note: 这也是构造函数被唯一调用的地方.
             AtlasHiveHookContext context = new AtlasHiveHookContext(this, oper, hookContext, knownObjects);
 
             BaseHiveEvent event = null;
+
+            // Note: 下面Case是所有能够触发Hook的Hive操作类型
 
             switch (oper) {
                 case CREATEDATABASE:
@@ -189,6 +218,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                 case IMPORT:
                 case QUERY:
                 case TRUNCATETABLE:
+                    // Note: 关注这里就可以了, 这是CRUD的主要位置.
                     event = new CreateHiveProcess(context);
                 break;
 
@@ -225,6 +255,9 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
             if (event != null) {
                 final UserGroupInformation ugi = hookContext.getUgi() == null ? Utils.getUGI() : hookContext.getUgi();
 
+                // Note: getNotificationMessages()方法对LineageInfo做了初步筛选, 然后加上user信息
+                // 重新封装成了HiveNotification类型
+                // Note: 现在的问题就是上游表没有dp的具体值信息.
                 super.notifyEntities(event.getNotificationMessages(), ugi);
             }
         } catch (Throwable t) {

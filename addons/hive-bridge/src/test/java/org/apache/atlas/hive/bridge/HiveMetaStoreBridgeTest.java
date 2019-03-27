@@ -84,8 +84,10 @@ public class HiveMetaStoreBridgeTest {
     @Test
     public void testImportThatUpdatesRegisteredDatabase() throws Exception {
         // setup database
+        // Note: mock了Hive这个类, 定义getAllDatabases()方法的行为
         when(hiveClient.getAllDatabases()).thenReturn(Arrays.asList(new String[]{TEST_DB_NAME}));
         String description = "This is a default database";
+        // Note: 创建一个hive metastore的database对象.
         Database db = new Database(TEST_DB_NAME, description, "/user/hive/default", null);
         when(hiveClient.getDatabase(TEST_DB_NAME)).thenReturn(db);
         when(hiveClient.getAllTables(TEST_DB_NAME)).thenReturn(Arrays.asList(new String[]{}));
@@ -136,10 +138,13 @@ public class HiveMetaStoreBridgeTest {
                 getEntity(HiveDataTypes.HIVE_PROCESS.getName(), AtlasClient.GUID, "82e06b34-9151-4023-aa9d-b82103a50e77")));
 
 
+        // Note: bridge才是要被测试的对象, hiveClient和atlasClient都是mock出来的, 注入到bridge当中.
         HiveMetaStoreBridge bridge = new HiveMetaStoreBridge(CLUSTER_NAME, hiveClient, atlasClientV2);
+        // Note: 调用被测方法, 随后verify(观测)被测方法的行为.
         bridge.importHiveMetadata(null, null, true);
 
         // verify update is called on table
+        // Note: 验证mock对象(atlasClientV2上的updateEntity方法被调用了两次.)
         verify(atlasClientV2, times(2)).updateEntity(anyObject());
 
     }

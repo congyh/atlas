@@ -57,6 +57,11 @@ import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.DE
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
 
 
+/**
+ * Note: 这是AtlasEntity对象存储CRUD的核心类.
+ *
+ * 关键方法: createOrUpdate: 根据单条的Lineage信息创建或更新AtlasEntity信息.
+ */
 @Component
 public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityStoreV2.class);
@@ -657,6 +662,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         return ret;
     }
 
+
+     // Note: 核心方法, 根据单条Lineage信息进行AtlasEntity对象的更新. 可以是列级别的Lineage更新
     private EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate, boolean replaceClassifications) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> createOrUpdate()");
@@ -675,10 +682,16 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         MetricRecorder metric = RequestContext.get().startMetricRecord("createOrUpdate");
 
         try {
+            // Note: 初步解析, 放到context的List中, 便于后续批量处理
+            // Note: 这里分别生成了两个list, createList和updateList
             final EntityMutationContext context = preCreateOrUpdate(entityStream, entityGraphMapper, isPartialUpdate);
+
+            // Note: 注意, 下面的一大段只是为了进行权限检查和是否需要创建和更新的确认, 并不是真正对图进行了修改.
+            //=====================================================================================
 
             // Check if authorized to create entities
             if (!RequestContext.get().isImportInProgress()) {
+                // Note: created才是添加上线时间这个classification时应该重点关注的.
                 for (AtlasEntity entity : context.getCreatedEntities()) {
                     AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
                                                          "create entity: type=", entity.getTypeName());
@@ -720,8 +733,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 }
             }
 
+            // Note: 上层的函数调用实际上是忽略了response的(从NotificationHookConsumer的视角来看是这样的)
             EntityMutationResponse ret = entityGraphMapper.mapAttributesAndClassifications(context, isPartialUpdate, replaceClassifications);
 
+            // Note: guid是之前在preCreateOrUpdate过程中分配并保存到context中的.
             ret.setGuidAssignments(context.getGuidAssignments());
 
             // Notify the change listeners
@@ -739,6 +754,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
     }
 
+    // Note: 在实际更新图之前, 先加入到context中的list中, 用于后续批量更新
     private EntityMutationContext preCreateOrUpdate(EntityStream entityStream, EntityGraphMapper entityGraphMapper, boolean isPartialUpdate) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("preCreateOrUpdate");
 
@@ -781,6 +797,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     if (RequestContext.get().isImportInProgress() && AtlasTypeUtil.isAssignedGuid(entity.getGuid())) {
                         vertex = entityGraphMapper.createVertexWithGuid(entity, entity.getGuid());
                     } else {
+                        // Note: 层层封装罢了, 没有进行实际的存储
                          vertex = entityGraphMapper.createVertex(entity);
                     }
 
@@ -794,6 +811,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                     requestContext.recordEntityGuidUpdate(entity, guid);
 
+                    // Note: 加入到上下文的list当中, 用于后续批量更新
                     context.addCreated(guid, entity, entityType, vertex);
                 }
 

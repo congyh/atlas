@@ -115,6 +115,7 @@ public class EntityGraphMapper {
 
     public AtlasVertex createVertex(AtlasEntity entity) {
         final String guid = UUID.randomUUID().toString();
+        // Note: 继续封装
         return createVertexWithGuid(entity, guid);
     }
 
@@ -125,6 +126,9 @@ public class EntityGraphMapper {
 
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
 
+        // Note: 这里经过了一系列调用, 实际上是调用了AtlasJanusElement的构造方法, 创建了一个对象, 包括两个field
+        // private T element;
+        // protected AtlasJanusGraph graph;
         AtlasVertex ret = createStructVertex(entity);
 
         for (String superTypeName : entityType.getAllSuperTypes()) {
@@ -175,20 +179,31 @@ public class EntityGraphMapper {
         }
     }
 
+    /**
+     * Note: 实际对图进行更新的底层方法
+     * @param context
+     * @param isPartialUpdate
+     * @param replaceClassifications
+     * @return
+     * @throws AtlasBaseException
+     */
     public EntityMutationResponse mapAttributesAndClassifications(EntityMutationContext context, final boolean isPartialUpdate, final boolean replaceClassifications) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("mapAttributesAndClassifications");
 
         EntityMutationResponse resp = new EntityMutationResponse();
 
+        // Note: 获取要create或update的图entity list.
         Collection<AtlasEntity> createdEntities = context.getCreatedEntities();
         Collection<AtlasEntity> updatedEntities = context.getUpdatedEntities();
 
+        // Note: 遍历需要创建的entity
         if (CollectionUtils.isNotEmpty(createdEntities)) {
             for (AtlasEntity createdEntity : createdEntities) {
                 String          guid       = createdEntity.getGuid();
                 AtlasVertex     vertex     = context.getVertex(guid);
                 AtlasEntityType entityType = context.getType(guid);
 
+                // Note: 移除掉不支持的attribute
                 compactAttributes(createdEntity);
 
                 mapRelationshipAttributes(createdEntity, vertex, CREATE, context);
@@ -196,6 +211,7 @@ public class EntityGraphMapper {
                 mapAttributes(createdEntity, vertex, CREATE, context);
 
                 resp.addEntity(CREATE, constructHeader(createdEntity, entityType, vertex));
+                // Note: 这里是为entity添加classification的, 需要注意classification list为空的情况
                 addClassifications(context, guid, createdEntity.getClassifications());
             }
         }
@@ -1877,6 +1893,10 @@ public class EntityGraphMapper {
         }
     }
 
+    /**
+     * Note: 对于不支持的attribute, 移除掉
+     * @param entity
+     */
     private static void compactAttributes(AtlasEntity entity) {
         if (entity != null) {
             Map<String, Object> relationshipAttributes = entity.getRelationshipAttributes();

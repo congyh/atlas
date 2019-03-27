@@ -48,6 +48,8 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 
 
 /**
+ * Note: 核心存储是attribute这个map
+ *
  * Captures details of struct contents. Not instantiated directly, used only via AtlasEntity, AtlasClassification.
  */
 @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)

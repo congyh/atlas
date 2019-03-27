@@ -109,6 +109,9 @@ public class HookNotification implements Serializable {
         return sb;
     }
 
+    /**
+     * Note: 这是HookNotification的子类
+     */
     @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
     @JsonSerialize(include=JsonSerialize.Inclusion.ALWAYS)
     @JsonIgnoreProperties(ignoreUnknown=true)

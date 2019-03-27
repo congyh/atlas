@@ -67,6 +67,7 @@ public class ColumnLineageUtils {
 
         for (Map.Entry<LineageInfo.DependencyKey, LineageInfo.Dependency> e : lInfo.entrySet()) {
             List<HiveColumnLineageInfo> l = new ArrayList<>();
+            // Note: 实际上就是列key, 根据这个key能够拿到table, db信息
             String k = getQualifiedName(e.getKey());
 
             if (LOG.isDebugEnabled()) {

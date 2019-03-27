@@ -566,10 +566,13 @@ public class HiveMetaStoreBridge {
 
     private AtlasEntityWithExtInfo toTableEntity(AtlasEntity database, final Table hiveTable, AtlasEntityWithExtInfo table) throws AtlasHookException {
         if (table == null) {
+            // Note: 创建一个hive_table类型的实体
             table = new AtlasEntityWithExtInfo(new AtlasEntity(HiveDataTypes.HIVE_TABLE.getName()));
         }
 
+        // Note: 如果table存在, 取的table的AtlasEntity结构.
         AtlasEntity tableEntity        = table.getEntity();
+        // Note: 获取表名
         String      tableQualifiedName = getTableQualifiedName(clusterName, hiveTable);
         long        createTime         = BaseHiveEvent.getTableCreateTime(hiveTable);
         long        lastAccessTime     = hiveTable.getLastAccessTime() > 0 ? hiveTable.getLastAccessTime() : createTime;

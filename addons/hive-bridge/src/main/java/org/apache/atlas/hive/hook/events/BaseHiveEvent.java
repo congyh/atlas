@@ -65,14 +65,19 @@ import static org.apache.atlas.hive.hook.AtlasHiveHookContext.QNAME_SEP_CLUSTER_
 import static org.apache.atlas.hive.hook.AtlasHiveHookContext.QNAME_SEP_ENTITY_NAME;
 import static org.apache.atlas.hive.hook.AtlasHiveHookContext.QNAME_SEP_PROCESS;
 
+/**
+ * Note: 核心存储是AtlasHiveHookContext context;
+ */
 public abstract class BaseHiveEvent {
     private static final Logger LOG = LoggerFactory.getLogger(BaseHiveEvent.class);
 
     public static final String HIVE_TYPE_DB             = "hive_db";
+    // Note: hive_table这里也是需要关注的.
     public static final String HIVE_TYPE_TABLE          = "hive_table";
     public static final String HIVE_TYPE_STORAGEDESC    = "hive_storagedesc";
     public static final String HIVE_TYPE_COLUMN         = "hive_column";
     public static final String HIVE_TYPE_PROCESS        = "hive_process";
+    // Note: hive hook方式进行的hive列级别lineage解析的用于AtlasEntity构建的标识
     public static final String HIVE_TYPE_COLUMN_LINEAGE = "hive_column_lineage";
     public static final String HIVE_TYPE_SERDE          = "hive_serde";
     public static final String HIVE_TYPE_ORDER          = "hive_order";
@@ -206,6 +211,7 @@ public abstract class BaseHiveEvent {
 
     protected void addProcessedEntities(AtlasEntitiesWithExtInfo entitiesWithExtInfo) {
         for (AtlasEntity entity : context.getEntities()) {
+            // Note: 这里将列血统所涉及到的所有entity都加上context中出现的所有entity.
             entitiesWithExtInfo.addReferredEntity(entity);
         }
 
@@ -245,9 +251,10 @@ public abstract class BaseHiveEvent {
             break;
 
             case TABLE:
-            case PARTITION: {
+            case PARTITION: {// Note: TABLE和PARTITION的都会落到这里
                 Table table = getHive().getTable(entity.getTable().getDbName(), entity.getTable().getTableName());
 
+                // Note: 生成一个table实例
                 ret = toTableEntity(table, entityExtInfo);
             }
             break;
@@ -706,9 +713,9 @@ public abstract class BaseHiveEvent {
         String tableName = column.getTabAlias().getTable().getTableName();
         String colName   = column.getColumn() != null ? column.getColumn().getName() : null;
 
-        if (colName == null) {
+        if (colName == null) { // Note: TODO: 什么情况下colName是空的呢?
             return (dbName + QNAME_SEP_ENTITY_NAME + tableName + QNAME_SEP_CLUSTER_NAME).toLowerCase() + getClusterName();
-        } else {
+        } else { // Note: 这里需要加上dp的信息, 例如后缀_dp=RTB
             return (dbName + QNAME_SEP_ENTITY_NAME + tableName + QNAME_SEP_ENTITY_NAME + colName + QNAME_SEP_CLUSTER_NAME).toLowerCase() + getClusterName();
         }
     }
@@ -741,6 +748,7 @@ public abstract class BaseHiveEvent {
     protected String getColumnQualifiedName(String tblQualifiedName, String columnName) {
         int sepPos = tblQualifiedName.lastIndexOf(QNAME_SEP_CLUSTER_NAME);
 
+        // Note: 下面这段做的工作就是在表名和cluster后缀之间分开, 插入列名.
         if (sepPos == -1) {
             return tblQualifiedName + QNAME_SEP_ENTITY_NAME + columnName.toLowerCase();
         } else {

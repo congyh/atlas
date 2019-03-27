@@ -42,6 +42,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static final String ATLAS_CONFIGURATION_DIRECTORY_PROPERTY = "atlas.conf";
     private static final Logger LOG = LoggerFactory.getLogger(ApplicationProperties.class);
 
+    // Note: 这里就是http://atlas.apache.org/Hook-Hive.html中所定义的属性所在地
     public static final String  APPLICATION_PROPERTIES     = "atlas-application.properties";
 
     public static final SimpleEntry<String, String> DB_CACHE_CONF               = new SimpleEntry<>("atlas.graph.cache.db-cache", "true");
@@ -89,6 +90,8 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     }
 
     public static Configuration get(String fileName) throws AtlasException {
+        // Note: Hive hook等方式是没有这个配置的, 所以走的是confLocation == null这条线
+        // TODO: 是否可以直接将config文件放在HIVE_AUX_JARS_PATH中就可以了?
         String confLocation = System.getProperty(ATLAS_CONFIGURATION_DIRECTORY_PROPERTY);
         try {
             URL url = null;
@@ -96,6 +99,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
             if (confLocation == null) {
                 LOG.info("Looking for {} in classpath", fileName);
 
+                // Note: 对于Hive Hook, 是采用getResource的方式去获取
                 url = ApplicationProperties.class.getClassLoader().getResource(fileName);
 
                 if (url == null) {

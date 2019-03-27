@@ -33,6 +33,12 @@ import static org.apache.atlas.AtlasConstants.ATLAS_MIGRATION_MODE_FILENAME;
 import static org.apache.atlas.AtlasConstants.ATLAS_SERVICES_ENABLED;
 
 /**
+ * Note: 这个类是Atlas的各种服务类的入口, 例如KafkaConsumer接收Lineage的服务就是在这里启动的.
+ *
+ * 关键方法是start()方法和Service接口.
+ *
+ * 备注: KafkaConsumer的启动服务叫NotificationHookConsumer
+ *
  * Utility for starting and stopping all services.
  */
 @AtlasService

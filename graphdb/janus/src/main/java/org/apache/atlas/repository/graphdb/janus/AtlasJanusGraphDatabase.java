@@ -51,6 +51,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * Note: 图数据库实例, 关键存储field: private static volatile JanusGraph graphInstance;
+ * 保存的是janusGraph db的实例.
+ *
  * Default implementation for Graph Provider that doles out JanusGraph.
  */
 public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, AtlasJanusEdge> {
@@ -69,6 +72,7 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
     public static final String INDEX_BACKEND_LUCENE = "lucene";
     public static final String INDEX_BACKEND_ES     = "elasticsearch";
 
+    // Note: 保存JanusGraph数据库实例.
     private static volatile AtlasJanusGraph atlasGraphInstance = null;
     private static volatile JanusGraph graphInstance;
 
@@ -127,6 +131,12 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
         }
     }
 
+    /**
+     * Note: 这里是创建JanusGraph数据库实例的地方.
+     *
+     * 初始化了field: graphInstance
+     * @return
+     */
     public static JanusGraph getGraphInstance() {
         if (graphInstance == null) {
             synchronized (AtlasJanusGraphDatabase.class) {

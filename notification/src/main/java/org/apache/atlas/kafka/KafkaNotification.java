@@ -45,6 +45,8 @@ import java.util.*;
 import java.util.concurrent.Future;
 
 /**
+ * Note: Kafka通信机制定义汇总, Producer和Consumer的定义都在此.
+ *
  * Kafka specific access point to the Atlas notification framework.
  */
 @Component
@@ -68,6 +70,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
 
     private final Properties    properties;
     private final Long          pollTimeOutMs;
+    // Note: 对于Hook这种类型而言, 默认订阅的Kafka Topic是ATLAS_HOOK, 配置项是atlas.notification.hook.topic.name
     private       KafkaConsumer consumer;
     private       KafkaProducer producer;
     private       String        consumerClosedErrorMsg;

@@ -79,6 +79,8 @@ import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_D
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_PROPERTY;
 
 /**
+ * Note: 实际的图存储实现类
+ *
  * Janus implementation of AtlasGraph.
  */
 public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusEdge> {

@@ -61,14 +61,20 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
         return this.receive(this.pollTimeoutMilliSeconds);
     }
 
+    /**
+     * Note: KafkaConsumer的实际接收方法, 使用的是poll方法来批量拉取消息.
+     * @param timeoutMilliSeconds poll timeout
+     * @return
+     */
     @Override
     public List<AtlasKafkaMessage<T>> receive(long timeoutMilliSeconds) {
 
         List<AtlasKafkaMessage<T>> messages = new ArrayList();
 
+        // Note: 批量拉取消息
         ConsumerRecords<?, ?> records = kafkaConsumer.poll(timeoutMilliSeconds);
 
-        if (records != null) {
+        if (records != null) { // Note: 如果为空, 直接返回空List
             for (ConsumerRecord<?, ?> record : records) {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Received Message topic ={}, partition ={}, offset = {}, key = {}, value = {}",
@@ -77,7 +83,7 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
 
                 T message = null;
 
-                try {
+                try {// Note: 默认是反序列化json串.
                     message = deserializer.deserialize(record.value().toString());
                 } catch (OutOfMemoryError excp) {
                     LOG.error("Ignoring message that failed to deserialize: topic={}, partition={}, offset={}, key={}, value={}",

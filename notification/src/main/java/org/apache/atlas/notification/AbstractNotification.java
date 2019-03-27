@@ -83,9 +83,11 @@ public abstract class AbstractNotification implements NotificationInterface {
         List<String> strMessages = new ArrayList<>(messages.size());
 
         for (int index = 0; index < messages.size(); index++) {
+            // Note: 将原始的要发送的信息解析为JSON串
             createNotificationMessages(messages.get(index), strMessages);
         }
 
+        // Note: 调用实际的send实现类, 当前只有Kafka一种实现方式
         sendInternal(type, strMessages);
     }
 
@@ -139,6 +141,8 @@ public abstract class AbstractNotification implements NotificationInterface {
 
     /**
      * Get the notification message JSON from the given object.
+     *
+     * Note: 最终创建通知json串的地方.
      *
      * @param message  the message in object form
      *

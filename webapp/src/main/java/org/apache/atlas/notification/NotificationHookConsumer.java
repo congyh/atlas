@@ -87,6 +87,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 /**
+ * Note: 创建KafkaConsumer消费HOOK KafkaProducer发送的Lineage信息的关键类, 包装类是HookConsumer, 也是在这里面定义的.
+ *
+ * 核心存储: List<HookConsumer> consumers;
+ * 核心方法: HookConsumer.doWork, 在这里面做实际的消息接收
+ * 核心引用: AtlasEntityStore              atlasEntityStore这是存储所有Atlas定义的实体类型的服务引用.
+ *
+ * Note: TODO: 找到实际的存储方法
  * Consumer of notifications from hooks e.g., hive hook etc.
  */
 @Component
@@ -213,6 +220,10 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         LOG.info("{}={}", CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD, skipHiveColumnLineageHive20633InputsThreshold);
     }
 
+    /**
+     * Note: 这里是KafkaConsumer的启动入口
+     * @throws AtlasException
+     */
     @Override
     public void start() throws AtlasException {
         if (consumerDisabled) {
@@ -237,6 +248,10 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         }
     }
 
+    /**
+     * Note: 创建消息类型为HOOK类型的KafkaConsumers
+     * @param executorService
+     */
     private void startConsumers(ExecutorService executorService) {
         int                                          numThreads            = applicationProperties.getInt(CONSUMER_THREADS_PROPERTY, 1);
         List<NotificationConsumer<HookNotification>> notificationConsumers = notificationInterface.createConsumers(NotificationType.HOOK, numThreads);
@@ -247,6 +262,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
         executors = executorService;
 
+        // Note: 从通用的NotificationConsumer生成专门处理Hook的HookConsumer
         for (final NotificationConsumer<HookNotification> consumer : notificationConsumers) {
             HookConsumer hookConsumer = new HookConsumer(consumer);
 
@@ -390,6 +406,9 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         }
     }
 
+    /**
+     * Note: KafkaConsumer for HOOK的最上层封装结构.
+     */
     @VisibleForTesting
     class HookConsumer extends ShutdownableThread {
         private final NotificationConsumer<HookNotification> consumer;
@@ -407,6 +426,9 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             failedCommitOffsetRecorder = new FailedCommitOffsetRecorder();
         }
 
+        /**
+         * Note: 核心方法, 批量接收HookNotification并逐条进行解析
+         */
         @Override
         public void doWork() {
             LOG.info("==> HookConsumer doWork()");
@@ -420,9 +442,11 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             try {
                 while (shouldRun.get()) {
                     try {
+                        // Note: 这里是实际的接收消息的地方
                         List<AtlasKafkaMessage<HookNotification>> messages = consumer.receive();
 
                         for (AtlasKafkaMessage<HookNotification> msg : messages) {
+                            // Note: 这里是实际的解析方法
                             handleMessage(msg);
                         }
                     } catch (IllegalStateException ex) {
@@ -448,6 +472,14 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             }
         }
 
+        /**
+         * Note: 对单个接收到的HookNotification, 即为一条血统信息, 包括下游(table, Column)对,
+         * 及所有的Dependency信息进行解析
+         *
+         * @param kafkaMsg
+         * @throws AtlasServiceException
+         * @throws AtlasException
+         */
         @VisibleForTesting
         void handleMessage(AtlasKafkaMessage<HookNotification> kafkaMsg) throws AtlasServiceException, AtlasException {
             AtlasPerfTracer  perf        = null;
@@ -462,11 +494,13 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             }
 
             try {
+                // Note: 如果是重放的消息, 直接提交
                 if(failedCommitOffsetRecorder.isMessageReplayed(kafkaMsg.getOffset())) {
                     commit(kafkaMsg);
                     return;
                 }
 
+                // Note: TODO: 这是一个预处理的地方, 具体什么作用还没看
                 preProcessNotificationMessage(kafkaMsg);
 
                 if (isEmptyMessage(kafkaMsg)) {
@@ -488,8 +522,11 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                         requestContext.setUser(messageUser, null);
 
+                        // Note: 分Hive操作类型进行不同的Lineage解析处理
+                        // Note: 首先关注的是ENTITY_CREATE
                         switch (message.getType()) {
                             case ENTITY_CREATE: {
+                                // Note: 将HookNotification强制类型转换成一个EntityCreateRequest
                                 final EntityCreateRequest      createRequest = (EntityCreateRequest) message;
                                 final AtlasEntitiesWithExtInfo entities      = instanceConverter.toAtlasEntities(createRequest.getEntities());
 
@@ -499,6 +536,9 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                                             AtlasClient.API_V1.CREATE_ENTITY.getNormalizedPath());
                                 }
 
+                                // Note: 从AtlasEntitiesWithExtInfo创建一个EntityStream(绕来绕去, 实际上还是为了传递Lineage信息)
+                                // 通过阅读够在方法, 发现是直接将entities附在了this.entitiesWithExtInfo字段上.
+                                // Note: 忽略了创建的response
                                 atlasEntityStore.createOrUpdate(new AtlasEntityStream(entities), false);
                             }
                             break;

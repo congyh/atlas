@@ -88,6 +88,11 @@ public interface NotificationInterface {
     <T> void send(NotificationType type, T... messages) throws NotificationException;
 
     /**
+     * Note: 发送的消息类型是泛型的, 便于复用, 这里是值得学习的.
+     *
+     * 所有信息, 例如Lineage信息, 都需要经过解析后生成标准的消息封装类型, 例如HookNotification类型.
+     * Lineage就是通过HookNotification类型发送出去的.
+     *
      * Send the given messages.
      *
      * @param type      the message type

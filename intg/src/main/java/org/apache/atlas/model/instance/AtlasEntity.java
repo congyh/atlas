@@ -49,6 +49,8 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 
 
 /**
+ * Note: 核心存储对象: AtalsStruct中的attribute这个map
+ *
  * An instance of an entity - like hive_table, hive_database.
  */
 @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
@@ -340,6 +342,8 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         setMeanings(meanings);
     }
 
+    // Note: 在Atlas中, 每个entity都有创建时间, 更新时间等信息.
+    // 所以hive_column_lineage也是有这个时间的. 可以通过Admin UI的Audit来查看.
     private void init() {
         setGuid(nextInternalId());
         setHomeId(null);
@@ -563,6 +567,9 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         }
     }
 
+    /**
+     * Note: 是AtlasEntity的包装类, 含有AtlasEntity所关联的所有引用信息.
+     */
     @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
     @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown=true)
@@ -650,6 +657,9 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         }
     }
 
+    /**
+     * Note: 核心存储是List<AtlasEntity> entities
+     */
     @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
     @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown=true)

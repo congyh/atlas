@@ -36,6 +36,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 
+/**
+ * Note: 在HiveHook类中使用了
+ */
 public class AtlasHiveHookContext {
     public static final char   QNAME_SEP_CLUSTER_NAME = '@';
     public static final char   QNAME_SEP_ENTITY_NAME  = '.';
@@ -44,11 +47,13 @@ public class AtlasHiveHookContext {
 
     private final HiveHook                 hook;
     private final HiveOperation            hiveOperation;
+    // Note: 在这里组合进了hive中定义的HookContext, 里面包含了LineageInfo这个用于血缘分析的基础类.
     private final HookContext              hiveContext;
     private final Hive                     hive;
     private final Map<String, AtlasEntity> qNameEntityMap = new HashMap<>();
     private final HiveHookObjectNamesCache knownObjects;
 
+    // Note: hiveContext是第一次在这里使用的.
     public AtlasHiveHookContext(HiveHook hook, HiveOperation hiveOperation, HookContext hiveContext, HiveHookObjectNamesCache knownObjects) throws Exception {
         this.hook          = hook;
         this.hiveOperation = hiveOperation;
@@ -150,6 +155,7 @@ public class AtlasHiveHookContext {
         if (knownObjects != null) {
             String operationName = hiveContext.getOperationName();
 
+            // Note: 如果是修改表或数据库结构
             if (operationName != null && operationName.startsWith("CREATE") || operationName.startsWith("ALTER")) {
                 if (CollectionUtils.isNotEmpty(hiveContext.getOutputs())) {
                     for (WriteEntity output : hiveContext.getOutputs()) {

@@ -30,6 +30,7 @@ public class NotificationProvider {
     public static KafkaNotification get() {
         if (kafka == null) {
             try {
+                // Note: 可以看到Kafka配置也是通过get()方法获得的, 所以如果要hack配置的话, 必须从这里hack.
                 Configuration applicationProperties = ApplicationProperties.get();
                 kafka = new KafkaNotification(applicationProperties);
             } catch (AtlasException e) {

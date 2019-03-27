@@ -51,6 +51,7 @@ public class AtlasJanusElement<T extends Element> implements AtlasElement {
     private T element;
     protected AtlasJanusGraph graph;
 
+    // Note: 实际的存储会创建一个这个对象
     public AtlasJanusElement(AtlasJanusGraph graph, T element) {
         this.element = element;
         this.graph = graph;
