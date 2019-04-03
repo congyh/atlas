@@ -495,7 +495,14 @@ public abstract class BaseHiveEvent {
                 String tableFullName = table.getDbName() + "." + table.getTableName();
                 List<String> partitionValues = context.getColumnNameRewriter().getPartitionValueForHiveTable(tableFullName);
                 String partitionName = context.getColumnNameRewriter().getPartitionName(tableFullName);
-                String colName = fieldSchema.getName() + "_" + partitionName + "=" + partitionValues.get(0);
+                Set<String> partitions = context.getColumnNameRewriter().getPartitionsForHiveTable(tableFullName);
+
+                String colName = null;
+                if (partitions.contains(fieldSchema.getName())) { // 如果是分区列, 不改写名字.
+                    colName = fieldSchema.getName();
+                } else {
+                    colName = fieldSchema.getName() + "_" + partitionName + "=" + partitionValues.get(0);
+                }
 
                 column.setAttribute(ATTRIBUTE_NAME, colName);
                 column.setAttribute(ATTRIBUTE_OWNER, table.getOwner());
@@ -669,7 +676,14 @@ public abstract class BaseHiveEvent {
         String tableFullName = table.getDbName() + "." + table.getTableName();
         List<String> partitionValues = context.getColumnNameRewriter().getPartitionValueForHiveTable(tableFullName);
         String partitionName = context.getColumnNameRewriter().getPartitionName(tableFullName);
-        String colName = column.getName() + "_" + partitionName + "=" + partitionValues.get(0);
+        Set<String> partitions = context.getColumnNameRewriter().getPartitionsForHiveTable(tableFullName);
+
+        String colName = null;
+        if (partitions.contains(column.getName())) { // 如果是分区列, 不改写名字.
+            colName = column.getName();
+        } else {
+            colName = column.getName() + "_" + partitionName + "=" + partitionValues.get(0);
+        }
 
         if (sepPos == -1) {
             return tblQualifiedName + QNAME_SEP_ENTITY_NAME + colName.toLowerCase();

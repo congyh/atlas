@@ -18,17 +18,22 @@
 
 package org.apache.atlas.hive.hook;
 
+import java.util.List;
+
 public class HiveTableEntity {
 
     public static final String HIVE_TABLE_NAME = "hive_table_name";
     public static final String HIVE_TABLE_LINEAGE_PARTITIONS = "hive_lineage_partitions";
+    public static final String HIVE_TABLE_PARTITIONS = "hive_partitions";
 
     private String tableName;
     private String lineagePartition;
+    private List<String> partitions;
 
-    public HiveTableEntity(String tableName, String lineagePartition) {
+    public HiveTableEntity(String tableName, String lineagePartition, List<String> partitions) {
         this.tableName = tableName;
         this.lineagePartition = lineagePartition;
+        this.partitions = partitions;
     }
 
     public String getTableName() {
@@ -45,5 +50,13 @@ public class HiveTableEntity {
 
     public void setLineagePartition(String lineagePartition) {
         this.lineagePartition = lineagePartition;
+    }
+
+    public List<String> getPartitions() {
+        return partitions;
+    }
+
+    public void setPartitions(List<String> partitions) {
+        this.partitions = partitions;
     }
 }

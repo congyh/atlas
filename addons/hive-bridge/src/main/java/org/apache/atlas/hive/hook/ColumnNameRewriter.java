@@ -23,10 +23,7 @@ import org.apache.commons.collections.map.HashedMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * This class is response for loading lineage related config file.
@@ -73,6 +70,11 @@ public class ColumnNameRewriter {
         return partitionValueList;
     }
 
+    public Set<String> getPartitionsForHiveTable(String hiveTableName) {
+        HiveTableEntity hiveTableEntity = hiveTableEntityMap.get(hiveTableName);
+        return new HashSet<>(hiveTableEntity.getPartitions());
+    }
+
     public String getPartitionName(String hiveTableName) {
         // TODO: 暂时仅支持一个
         return hiveTableEntityMap.get(hiveTableName).getLineagePartition();
@@ -81,9 +83,9 @@ public class ColumnNameRewriter {
     private void init() {
         // TODO: 暂时移除fastjson依赖
         String hiveTableEntitiesStr = "[{\"hive_table_name\": \"dim.dim_test_table_with_dp_level1\", \"hive_lineage_partitions\": \"dp\"}, {\"hive_table_name\": \"dim.dim_test_table_with_dp_level2\", \"hive_lineage_partitions\": \"dp\"}, {\"hive_table_name\": \"dim.dim_test_table_with_dp_level3\", \"hive_lineage_partitions\": \"dp\"}]";
-        HiveTableEntity hiveTableEntity1 = new HiveTableEntity("dim.dim_test_table_with_dp_level1", "dp");
-        HiveTableEntity hiveTableEntity2 = new HiveTableEntity("dim.dim_test_table_with_dp_level2", "dp");
-        HiveTableEntity hiveTableEntity3 = new HiveTableEntity("dim.dim_test_table_with_dp_level3", "dp");
+        HiveTableEntity hiveTableEntity1 = new HiveTableEntity("dim.dim_test_table_with_dp_level1", "dp", Arrays.asList("dt", "dp"));
+        HiveTableEntity hiveTableEntity2 = new HiveTableEntity("dim.dim_test_table_with_dp_level2", "dp", Arrays.asList("dt", "dp"));
+        HiveTableEntity hiveTableEntity3 = new HiveTableEntity("dim.dim_test_table_with_dp_level3", "dp", Arrays.asList("dt", "dp"));
 //        List<HiveTableEntity> hiveTableEntities = JSON.parseArray(hiveTableEntitiesStr, HiveTableEntity.class);
         List<HiveTableEntity> hiveTableEntities = new ArrayList<>();
         hiveTableEntities.add(hiveTableEntity1);
