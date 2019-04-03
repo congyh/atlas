@@ -80,7 +80,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
 
         try {
             HiveOperation        oper    = OPERATION_MAP.get(hookContext.getOperationName());
-            AtlasHiveHookContext context = new AtlasHiveHookContext(this, oper, hookContext);
+            AtlasHiveHookContext context = new AtlasHiveHookContext(this, oper, hookContext, new ColumnNameRewriter());
 
             BaseHiveEvent event = null;
 

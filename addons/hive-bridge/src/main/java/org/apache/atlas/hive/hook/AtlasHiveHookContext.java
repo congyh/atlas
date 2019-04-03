@@ -22,7 +22,6 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.hadoop.hive.metastore.api.Database;
-import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.apache.hadoop.hive.ql.hooks.HookContext;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.metadata.Hive;
@@ -46,12 +45,14 @@ public class AtlasHiveHookContext {
     private final HookContext              hiveContext;
     private final Hive                     hive;
     private final Map<String, AtlasEntity> qNameEntityMap = new HashMap<>();
+    private final ColumnNameRewriter columnNameRewriter;
 
-    public AtlasHiveHookContext(HiveHook hook, HiveOperation hiveOperation, HookContext hiveContext) throws Exception {
+    public AtlasHiveHookContext(HiveHook hook, HiveOperation hiveOperation, HookContext hiveContext, ColumnNameRewriter columnNameRewriter) throws Exception {
         this.hook          = hook;
         this.hiveOperation = hiveOperation;
         this.hiveContext   = hiveContext;
         this.hive          = Hive.get(hiveContext.getConf());
+        this.columnNameRewriter = columnNameRewriter;
 
         init();
     }
@@ -62,6 +63,10 @@ public class AtlasHiveHookContext {
 
     public Hive getHive() {
         return hive;
+    }
+
+    public ColumnNameRewriter getColumnNameRewriter() {
+        return columnNameRewriter;
     }
 
     public HiveOperation getHiveOperation() {
@@ -97,7 +102,6 @@ public class AtlasHiveHookContext {
                 tableName = tableName + TEMP_TABLE_PREFIX + RandomStringUtils.random(10);
             }
         }
-
         return (table.getDbName() + QNAME_SEP_ENTITY_NAME + tableName + QNAME_SEP_CLUSTER_NAME).toLowerCase() + getClusterName();
     }
 
