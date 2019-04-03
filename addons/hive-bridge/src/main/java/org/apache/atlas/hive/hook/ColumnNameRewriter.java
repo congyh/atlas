@@ -58,7 +58,7 @@ public class ColumnNameRewriter {
     public List<String> getPartitionValueForHiveTable(String hiveTableName) {
         List<String> partitionValueList = new ArrayList<>();
         if (hiveTableName.equals("dim.dim_test_table_with_dp_level1")) {
-            partitionValueList.add("GDT");
+            partitionValueList.add("RTB");
         } else if (hiveTableName.equals("dim.dim_test_table_with_dp_level2")) {
             partitionValueList.add("GDT");
         } else if (hiveTableName.equals("dim.dim_test_table_with_dp_level3")) {
@@ -69,6 +69,11 @@ public class ColumnNameRewriter {
 
         return partitionValueList;
     }
+
+    public List<String> getLineagePartitionValues(String hiveTableName) {
+        return hiveTableEntityMap.get(hiveTableName).getLineagePartitionValues();
+    }
+
 
     public Set<String> getPartitionsForHiveTable(String hiveTableName) {
         HiveTableEntity hiveTableEntity = hiveTableEntityMap.get(hiveTableName);
@@ -82,10 +87,21 @@ public class ColumnNameRewriter {
 
     private void init() {
         // TODO: 暂时移除fastjson依赖
-        String hiveTableEntitiesStr = "[{\"hive_table_name\": \"dim.dim_test_table_with_dp_level1\", \"hive_lineage_partitions\": \"dp\"}, {\"hive_table_name\": \"dim.dim_test_table_with_dp_level2\", \"hive_lineage_partitions\": \"dp\"}, {\"hive_table_name\": \"dim.dim_test_table_with_dp_level3\", \"hive_lineage_partitions\": \"dp\"}]";
-        HiveTableEntity hiveTableEntity1 = new HiveTableEntity("dim.dim_test_table_with_dp_level1", "dp", Arrays.asList("dt", "dp"));
-        HiveTableEntity hiveTableEntity2 = new HiveTableEntity("dim.dim_test_table_with_dp_level2", "dp", Arrays.asList("dt", "dp"));
-        HiveTableEntity hiveTableEntity3 = new HiveTableEntity("dim.dim_test_table_with_dp_level3", "dp", Arrays.asList("dt", "dp"));
+        String hiveTableEntitiesStr = "[{\"hive_table_name\": \"dim.dim_test_table_with_dp_level1\", \"hive_lineage_partitions\": \"dp\"}, {\"hive_table_name\": \"dim.dim_test_table_with_dp_level2\", \"hive_lineage_partitions\": \"dp\"}, {\"hive_table_name\": \"dim.dim_test_table_with_dp_level3\", \"hive_lineage_partition\": \"dp\"}]";
+        HiveTableEntity hiveTableEntity1 = new HiveTableEntity(
+                "dim.dim_test_table_with_dp_level1",
+                "dp",
+                Arrays.asList("dt", "dp"),
+                Arrays.asList("RTB", "GDT", "CPS"));
+        HiveTableEntity hiveTableEntity2 = new HiveTableEntity("dim.dim_test_table_with_dp_level2",
+                "dp",
+                Arrays.asList("dt", "dp"),
+                Arrays.asList("RTB", "GDT", "CPS"));
+        HiveTableEntity hiveTableEntity3 = new HiveTableEntity(
+                "dim.dim_test_table_with_dp_level3",
+                "dp",
+                Arrays.asList("dt", "dp"),
+                Arrays.asList("RTB", "GDT", "CPS"));
 //        List<HiveTableEntity> hiveTableEntities = JSON.parseArray(hiveTableEntitiesStr, HiveTableEntity.class);
         List<HiveTableEntity> hiveTableEntities = new ArrayList<>();
         hiveTableEntities.add(hiveTableEntity1);

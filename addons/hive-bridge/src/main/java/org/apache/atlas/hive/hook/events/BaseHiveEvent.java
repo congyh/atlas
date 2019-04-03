@@ -469,50 +469,58 @@ public abstract class BaseHiveEvent {
         return ret;
     }
 
+    // TODO: 这里需要对列进行稳定排序
     protected List<AtlasEntity> getColumnEntities(AtlasObjectId tableId, Table table, List<FieldSchema> fieldSchemas) {
         List<AtlasEntity> ret          = new ArrayList<>();
         boolean           isKnownTable = tableId.getGuid() == null;
 
         int columnPosition = 0;
+        // 预留1000个字段上限
+        int positionInterval = 1000;
+        // TODO: 进行columnPosition hack
         for (FieldSchema fieldSchema : fieldSchemas) {
-            String      colQualifiedName = getQualifiedName(table, fieldSchema);
-            AtlasEntity column           = context.getEntity(colQualifiedName);
+            List<String>      colQualifiedNames = getQualifiedName(table, fieldSchema);
+            for (int i = 0; i < colQualifiedNames.size(); i++) {
+                columnPosition
+                AtlasEntity column           = context.getEntity(colQualifiedName);
 
-            if (column == null) {
-                column = new AtlasEntity(HIVE_TYPE_COLUMN);
+                if (column == null) {
+                    column = new AtlasEntity(HIVE_TYPE_COLUMN);
 
-                // if column's table was sent in an earlier notification, set 'guid' to null - which will:
-                //  - result in this entity to be not included in 'referredEntities'
-                //  - cause Atlas server to resolve the entity by its qualifiedName
-                if (isKnownTable) {
-                    column.setGuid(null);
+                    // if column's table was sent in an earlier notification, set 'guid' to null - which will:
+                    //  - result in this entity to be not included in 'referredEntities'
+                    //  - cause Atlas server to resolve the entity by its qualifiedName
+                    if (isKnownTable) {
+                        column.setGuid(null);
+                    }
+
+                    column.setAttribute(ATTRIBUTE_TABLE, tableId);
+                    column.setAttribute(ATTRIBUTE_QUALIFIED_NAME, colQualifiedName);
+
+                    String tableFullName = table.getDbName() + "." + table.getTableName();
+                    List<String> partitionValues = context.getColumnNameRewriter().getPartitionValueForHiveTable(tableFullName);
+                    String partitionName = context.getColumnNameRewriter().getPartitionName(tableFullName);
+                    Set<String> partitions = context.getColumnNameRewriter().getPartitionsForHiveTable(tableFullName);
+
+                    String colName = null;
+                    if (partitions.contains(fieldSchema.getName())) { // 如果是分区列, 不改写名字.
+                        colName = fieldSchema.getName();
+                    } else {
+                        colName = fieldSchema.getName() + "_" + partitionName + "=" + partitionValues.get(0);
+                    }
+
+                    column.setAttribute(ATTRIBUTE_NAME, colName);
+                    column.setAttribute(ATTRIBUTE_OWNER, table.getOwner());
+                    column.setAttribute(ATTRIBUTE_COL_TYPE, fieldSchema.getType());
+                    column.setAttribute(ATTRIBUTE_COL_POSITION, columnPosition++);
+                    column.setAttribute(ATTRIBUTE_COMMENT, fieldSchema.getComment());
+
+                    context.putEntity(colQualifiedName, column);
                 }
 
-                column.setAttribute(ATTRIBUTE_TABLE, tableId);
-                column.setAttribute(ATTRIBUTE_QUALIFIED_NAME, colQualifiedName);
-
-                String tableFullName = table.getDbName() + "." + table.getTableName();
-                List<String> partitionValues = context.getColumnNameRewriter().getPartitionValueForHiveTable(tableFullName);
-                String partitionName = context.getColumnNameRewriter().getPartitionName(tableFullName);
-                Set<String> partitions = context.getColumnNameRewriter().getPartitionsForHiveTable(tableFullName);
-
-                String colName = null;
-                if (partitions.contains(fieldSchema.getName())) { // 如果是分区列, 不改写名字.
-                    colName = fieldSchema.getName();
-                } else {
-                    colName = fieldSchema.getName() + "_" + partitionName + "=" + partitionValues.get(0);
-                }
-
-                column.setAttribute(ATTRIBUTE_NAME, colName);
-                column.setAttribute(ATTRIBUTE_OWNER, table.getOwner());
-                column.setAttribute(ATTRIBUTE_COL_TYPE, fieldSchema.getType());
-                column.setAttribute(ATTRIBUTE_COL_POSITION, columnPosition++);
-                column.setAttribute(ATTRIBUTE_COMMENT, fieldSchema.getComment());
-
-                context.putEntity(colQualifiedName, column);
+                ret.add(column);
             }
 
-            ret.add(column);
         }
 
         return ret;
@@ -666,7 +674,7 @@ public abstract class BaseHiveEvent {
         return getQualifiedName(table) + "_storage";
     }
 
-    protected String getQualifiedName(Table table, FieldSchema column) {
+    protected List<String> getQualifiedName(Table table, FieldSchema column) {
         String tblQualifiedName = getQualifiedName(table);
 
         int sepPos = tblQualifiedName.lastIndexOf(QNAME_SEP_CLUSTER_NAME);
@@ -675,19 +683,33 @@ public abstract class BaseHiveEvent {
         List<String> partitionValues = context.getColumnNameRewriter().getPartitionValueForHiveTable(tableFullName);
         String partitionName = context.getColumnNameRewriter().getPartitionName(tableFullName);
         Set<String> partitions = context.getColumnNameRewriter().getPartitionsForHiveTable(tableFullName);
+        List<String> lineagePartitionValues = context.getColumnNameRewriter().getLineagePartitionValues(tableFullName);
 
-        String colName = null;
-        if (partitions.contains(column.getName())) { // 如果是分区列, 不改写名字.
-            colName = column.getName();
-        } else {
-            colName = column.getName() + "_" + partitionName + "=" + partitionValues.get(0);
+        List<String> ret = new ArrayList<>();
+        Set<String> knownColumns = new HashSet<>();
+
+        for (String lineagePartitionValue: lineagePartitionValues) {
+            String colName = null;
+            if (partitions.contains(column.getName())) { // 如果是分区列, 不改写名字.
+                colName = column.getName();
+            } else {
+                colName = column.getName() + "_" + partitionName + "=" + lineagePartitionValue;
+            }
+
+            String colQualifiedName = null;
+            if (sepPos == -1) {
+                colQualifiedName = tblQualifiedName + QNAME_SEP_ENTITY_NAME + colName.toLowerCase();
+            } else {
+                colQualifiedName =  tblQualifiedName.substring(0, sepPos)
+                        + QNAME_SEP_ENTITY_NAME + colName.toLowerCase() + tblQualifiedName.substring(sepPos);
+            }
+
+            if (knownColumns.add(colQualifiedName)) {
+                ret.add(colQualifiedName);
+            }
         }
 
-        if (sepPos == -1) {
-            return tblQualifiedName + QNAME_SEP_ENTITY_NAME + colName.toLowerCase();
-        } else {
-            return tblQualifiedName.substring(0, sepPos) + QNAME_SEP_ENTITY_NAME + colName.toLowerCase() + tblQualifiedName.substring(sepPos);
-        }
+        return ret;
     }
 
     protected String getQualifiedName(DependencyKey column) {
