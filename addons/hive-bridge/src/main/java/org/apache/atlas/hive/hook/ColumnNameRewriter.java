@@ -61,9 +61,11 @@ public class ColumnNameRewriter {
     public List<String> getPartitionValueForHiveTable(String hiveTableName) {
         List<String> partitionValueList = new ArrayList<>();
         if (hiveTableName.equals("dim.dim_test_table_with_dp_level1")) {
-            partitionValueList.add("RTB");
+            partitionValueList.add("GDT");
         } else if (hiveTableName.equals("dim.dim_test_table_with_dp_level2")) {
-            partitionValueList.add("RTB");
+            partitionValueList.add("GDT");
+        } else if (hiveTableName.equals("dim.dim_test_table_with_dp_level3")) {
+            partitionValueList.add("GDT");
         } else {
             throw new RuntimeException("Unsupported table!");
         }

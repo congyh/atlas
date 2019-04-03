@@ -59,6 +59,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.hive.hook.AtlasHiveHookContext.QNAME_SEP_CLUSTER_NAME;
 import static org.apache.atlas.hive.hook.AtlasHiveHookContext.QNAME_SEP_ENTITY_NAME;
@@ -489,8 +490,14 @@ public abstract class BaseHiveEvent {
 
                 column.setAttribute(ATTRIBUTE_TABLE, tableId);
                 column.setAttribute(ATTRIBUTE_QUALIFIED_NAME, colQualifiedName);
-                // Note: TODO: 列名改写
-                column.setAttribute(ATTRIBUTE_NAME, fieldSchema.getName());
+
+                // TODO: 如果是分区列的话, 不进行列名改写.
+                String tableFullName = table.getDbName() + "." + table.getTableName();
+                List<String> partitionValues = context.getColumnNameRewriter().getPartitionValueForHiveTable(tableFullName);
+                String partitionName = context.getColumnNameRewriter().getPartitionName(tableFullName);
+                String colName = fieldSchema.getName() + "_" + partitionName + "=" + partitionValues.get(0);
+
+                column.setAttribute(ATTRIBUTE_NAME, colName);
                 column.setAttribute(ATTRIBUTE_OWNER, table.getOwner());
                 column.setAttribute(ATTRIBUTE_COL_TYPE, fieldSchema.getType());
                 column.setAttribute(ATTRIBUTE_COL_POSITION, columnPosition++);
@@ -654,14 +661,20 @@ public abstract class BaseHiveEvent {
     }
 
     protected String getQualifiedName(Table table, FieldSchema column) {
+        // TODO: 如果是分区列的话, 不进行列名改写
         String tblQualifiedName = getQualifiedName(table);
 
         int sepPos = tblQualifiedName.lastIndexOf(QNAME_SEP_CLUSTER_NAME);
 
+        String tableFullName = table.getDbName() + "." + table.getTableName();
+        List<String> partitionValues = context.getColumnNameRewriter().getPartitionValueForHiveTable(tableFullName);
+        String partitionName = context.getColumnNameRewriter().getPartitionName(tableFullName);
+        String colName = column.getName() + "_" + partitionName + "=" + partitionValues.get(0);
+
         if (sepPos == -1) {
-            return tblQualifiedName + QNAME_SEP_ENTITY_NAME + column.getName().toLowerCase();
+            return tblQualifiedName + QNAME_SEP_ENTITY_NAME + colName.toLowerCase();
         } else {
-            return tblQualifiedName.substring(0, sepPos) + QNAME_SEP_ENTITY_NAME + column.getName().toLowerCase() + tblQualifiedName.substring(sepPos);
+            return tblQualifiedName.substring(0, sepPos) + QNAME_SEP_ENTITY_NAME + colName.toLowerCase() + tblQualifiedName.substring(sepPos);
         }
     }
 
