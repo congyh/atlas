@@ -19,6 +19,7 @@
 package org.apache.atlas.hive.hook;
 
 //import com.alibaba.fastjson.JSON;
+import org.apache.hadoop.hive.ql.metadata.Table;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +55,14 @@ public class ColumnNameRewriter {
         init();
     }
 
+    public List<String> getPartitionValueForHiveTable(Table table) {
+        return getPartitionValueForHiveTable(getTableFullName(table));
+    }
+
+    public List<String> getPartitionValueForHiveTable(org.apache.hadoop.hive.metastore.api.Table table) {
+        return getPartitionValueForHiveTable(getTableFullName(table));
+    }
+
     public List<String> getPartitionValueForHiveTable(String hiveTableName) {
         List<String> partitionValueList = new ArrayList<>();
         if (hiveTableName.equals("dim.dim_test_table_with_dp_level1")) {
@@ -69,19 +78,56 @@ public class ColumnNameRewriter {
         return partitionValueList;
     }
 
+    public List<String> getLineagePartitionValues(Table table) {
+        return getLineagePartitionValues(getTableFullName(table));
+    }
+
+    public List<String> getLineagePartitionValues(org.apache.hadoop.hive.metastore.api.Table table) {
+        return getLineagePartitionValues(getTableFullName(table));
+    }
+
     public List<String> getLineagePartitionValues(String hiveTableName) {
         return hiveTableEntityMap.get(hiveTableName).getLineagePartitionValues();
     }
 
+    public String getLineagePartitionName(Table table) {
+        return getLineagePartitionName(getTableFullName(table));
+    }
 
-    public Set<String> getPartitionsForHiveTable(String hiveTableName) {
-        HiveTableEntity hiveTableEntity = hiveTableEntityMap.get(hiveTableName);
-        return new HashSet<>(hiveTableEntity.getPartitions());
+    public String getLineagePartitionName(org.apache.hadoop.hive.metastore.api.Table table) {
+        return getLineagePartitionName(getTableFullName(table));
     }
 
     public String getLineagePartitionName(String hiveTableName) {
         // TODO: 暂时仅支持一个
         return hiveTableEntityMap.get(hiveTableName).getLineagePartition();
+    }
+
+    public boolean isLineagePartitioned(Table table) {
+        return isLineagePartitioned(getTableFullName(table));
+    }
+
+    public boolean isLineagePartitioned(org.apache.hadoop.hive.metastore.api.Table table) {
+        return isLineagePartitioned(getTableFullName(table));
+    }
+
+    /**
+     * Returns if the hive table has lineage related partition.
+     */
+    public boolean isLineagePartitioned(String hiveTableName) {
+        return hiveTableEntityMap.containsKey(hiveTableName);
+    }
+
+    public String getTableFullName(Table table) {
+        return getTableFullName(table.getDbName(), table.getTableName());
+    }
+
+    public String getTableFullName(org.apache.hadoop.hive.metastore.api.Table table) {
+        return getTableFullName(table.getDbName(), table.getTableName());
+    }
+
+    public String getTableFullName(String dbName, String tableName) {
+        return dbName + "." + tableName;
     }
 
     private void init() {
@@ -90,16 +136,13 @@ public class ColumnNameRewriter {
         HiveTableEntity hiveTableEntity1 = new HiveTableEntity(
                 "dim.dim_test_table_with_dp_level1",
                 "dp",
-                Arrays.asList("dt", "dp"),
                 Arrays.asList("RTB", "GDT", "CPS"));
         HiveTableEntity hiveTableEntity2 = new HiveTableEntity("dim.dim_test_table_with_dp_level2",
                 "dp",
-                Arrays.asList("dt", "dp"),
                 Arrays.asList("RTB", "GDT", "CPS"));
         HiveTableEntity hiveTableEntity3 = new HiveTableEntity(
                 "dim.dim_test_table_with_dp_level3",
                 "dp",
-                Arrays.asList("dt", "dp"),
                 Arrays.asList("RTB", "GDT", "CPS"));
 //        List<HiveTableEntity> hiveTableEntities = JSON.parseArray(hiveTableEntitiesStr, HiveTableEntity.class);
         List<HiveTableEntity> hiveTableEntities = new ArrayList<>();
