@@ -74,7 +74,7 @@ public class AlterTableRenameCol extends AlterTable {
         FieldSchema       changedColumnNew = null;
 
         for (FieldSchema oldColumn : oldColumns) {
-            if (!newColumns.contains(oldColumn)) {
+            if (!newColumns.contains(oldColumn)) { // 直到找到一个不包含的旧列, 就说明找到了改名的列
                 changedColumnOld = oldColumn;
 
                 break;
@@ -90,13 +90,21 @@ public class AlterTableRenameCol extends AlterTable {
         }
 
         if (changedColumnOld != null && changedColumnNew != null) {
-            AtlasObjectId oldColumnId = new AtlasObjectId(HIVE_TYPE_COLUMN, ATTRIBUTE_QUALIFIED_NAME, getQualifiedName(oldTable, changedColumnOld));
-            AtlasEntity   newColumn   = new AtlasEntity(HIVE_TYPE_COLUMN);
+            // 这里两者始终应该相等, 暂时无法handle同时更名和加lineage partition枚举值的情况
+            List<String> changedColumnOldQualifiedNames = getQualifiedName(oldTable, changedColumnOld);
+            List<String> changedColumnNewQualifiedNames = getQualifiedName(newTable, changedColumnNew);
 
-            newColumn.setAttribute(ATTRIBUTE_NAME, changedColumnNew.getName());
-            newColumn.setAttribute(ATTRIBUTE_QUALIFIED_NAME, getQualifiedName(newTable, changedColumnNew));
+            List<String> changedColumnNewNames = getRewritedName(newTable, changedColumnNew);
+            for (int i = 0; i < changedColumnOldQualifiedNames.size(); i++) {
+                AtlasObjectId oldColumnId = new AtlasObjectId(HIVE_TYPE_COLUMN, ATTRIBUTE_QUALIFIED_NAME, changedColumnOldQualifiedNames.get(i));
 
-            ret.add(0, new EntityPartialUpdateRequestV2(getUserName(), oldColumnId, new AtlasEntityWithExtInfo(newColumn)));
+                AtlasEntity   newColumn   = new AtlasEntity(HIVE_TYPE_COLUMN);
+
+                newColumn.setAttribute(ATTRIBUTE_NAME, changedColumnNewNames.get(i));
+                newColumn.setAttribute(ATTRIBUTE_QUALIFIED_NAME, changedColumnNewQualifiedNames.get(i));
+
+                ret.add(i, new EntityPartialUpdateRequestV2(getUserName(), oldColumnId, new AtlasEntityWithExtInfo(newColumn)));
+            }
         } else {
             LOG.error("AlterTableRenameCol: no renamed column detected");
         }

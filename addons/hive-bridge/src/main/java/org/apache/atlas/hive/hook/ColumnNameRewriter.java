@@ -19,7 +19,6 @@
 package org.apache.atlas.hive.hook;
 
 //import com.alibaba.fastjson.JSON;
-import org.apache.commons.collections.map.HashedMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +57,7 @@ public class ColumnNameRewriter {
     public List<String> getPartitionValueForHiveTable(String hiveTableName) {
         List<String> partitionValueList = new ArrayList<>();
         if (hiveTableName.equals("dim.dim_test_table_with_dp_level1")) {
-            partitionValueList.add("RTB");
+            partitionValueList.add("CPS");
         } else if (hiveTableName.equals("dim.dim_test_table_with_dp_level2")) {
             partitionValueList.add("GDT");
         } else if (hiveTableName.equals("dim.dim_test_table_with_dp_level3")) {
@@ -80,7 +79,7 @@ public class ColumnNameRewriter {
         return new HashSet<>(hiveTableEntity.getPartitions());
     }
 
-    public String getPartitionName(String hiveTableName) {
+    public String getLineagePartitionName(String hiveTableName) {
         // TODO: 暂时仅支持一个
         return hiveTableEntityMap.get(hiveTableName).getLineagePartition();
     }
