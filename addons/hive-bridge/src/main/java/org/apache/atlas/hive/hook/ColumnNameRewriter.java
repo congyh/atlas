@@ -70,7 +70,13 @@ public class ColumnNameRewriter {
         } else if (hiveTableName.equals("dim.dim_test_table_with_dp_level2")) {
             partitionValueList.add("GDT");
         } else if (hiveTableName.equals("dim.dim_test_table_with_dp_level3")) {
-            partitionValueList.add("GDT");
+            partitionValueList.add("CPS");
+        } else if (hiveTableName.equals("dim.dim_test_table_with_pt_level1")) {
+            partitionValueList.add("RTB");
+        } else if (hiveTableName.equals("dim.dim_test_table_with_pt_level2")) {
+            partitionValueList.add("RTB");
+        } else if (hiveTableName.equals("dim.dim_test_table_with_pt_level3")) {
+            partitionValueList.add("RTB");
         } else {
             throw new RuntimeException("Unsupported table!");
         }
@@ -144,11 +150,26 @@ public class ColumnNameRewriter {
                 "dim.dim_test_table_with_dp_level3",
                 "dp",
                 Arrays.asList("RTB", "GDT", "CPS"));
+        HiveTableEntity hiveTableEntity4 = new HiveTableEntity(
+                "dim.dim_test_table_with_pt_level1",
+                "pt",
+                Arrays.asList("RTB"));
+        HiveTableEntity hiveTableEntity5 = new HiveTableEntity(
+                "dim.dim_test_table_with_pt_level2",
+                "pt",
+                Arrays.asList("RTB"));
+        HiveTableEntity hiveTableEntity6 = new HiveTableEntity(
+                "dim.dim_test_table_with_pt_level2",
+                "pt",
+                Arrays.asList("RTB"));
 //        List<HiveTableEntity> hiveTableEntities = JSON.parseArray(hiveTableEntitiesStr, HiveTableEntity.class);
         List<HiveTableEntity> hiveTableEntities = new ArrayList<>();
         hiveTableEntities.add(hiveTableEntity1);
         hiveTableEntities.add(hiveTableEntity2);
         hiveTableEntities.add(hiveTableEntity3);
+        hiveTableEntities.add(hiveTableEntity4);
+        hiveTableEntities.add(hiveTableEntity5);
+        hiveTableEntities.add(hiveTableEntity6);
         hiveTableEntityMap = new HashMap<>();
         for (HiveTableEntity entity: hiveTableEntities) {
             hiveTableEntityMap.put(entity.getTableName(), entity);
