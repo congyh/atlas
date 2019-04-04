@@ -94,7 +94,7 @@ public class AlterTableRenameCol extends AlterTable {
             List<String> changedColumnOldQualifiedNames = getQualifiedName(oldTable, changedColumnOld);
             List<String> changedColumnNewQualifiedNames = getQualifiedName(newTable, changedColumnNew);
 
-            List<String> changedColumnNewNames = getRewritedName(newTable, changedColumnNew);
+            List<String> changedColumnNewNames = getRewrittenColumnNames(newTable, changedColumnNew);
             for (int i = 0; i < changedColumnOldQualifiedNames.size(); i++) {
                 AtlasObjectId oldColumnId = new AtlasObjectId(HIVE_TYPE_COLUMN, ATTRIBUTE_QUALIFIED_NAME, changedColumnOldQualifiedNames.get(i));
 

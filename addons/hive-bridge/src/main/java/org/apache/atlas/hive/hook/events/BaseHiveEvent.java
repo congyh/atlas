@@ -19,6 +19,7 @@
 package org.apache.atlas.hive.hook.events;
 
 import org.apache.atlas.hive.hook.AtlasHiveHookContext;
+import org.apache.atlas.hive.hook.ColumnNameRewriter;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
@@ -474,20 +475,14 @@ public abstract class BaseHiveEvent {
 
         // 预留1000个字段上限
         int positionInterval = 1000;
-        Set<String> knownColumns = new HashSet<>();
         for (int i = 0; i < fieldSchemas.size(); i++) {
-            int columnPosition = i * positionInterval;
 
-            String tableFullName = table.getDbName() + "." + table.getTableName();
-            String partitionName = context.getColumnNameRewriter().getLineagePartitionName(tableFullName);
-            Set<String> partitions = context.getColumnNameRewriter().getPartitionsForHiveTable(tableFullName);
-            List<String> lineagePartitionValues = context.getColumnNameRewriter().getLineagePartitionValues(tableFullName);
-
-            List<String> colQualifiedNames = getQualifiedName(table, fieldSchemas.get(i));
+            ColumnNameRewriter rewriter = context.getColumnNameRewriter();
             FieldSchema fieldSchema = fieldSchemas.get(i);
+            List<String> colQualifiedNames = getQualifiedName(table, fieldSchema);
+
             for (int j = 0; j < colQualifiedNames.size(); j++) {
                 String colQualifiedName = colQualifiedNames.get(j);
-                // context中有一个qNameEntityMap, 可以用于去重
                 AtlasEntity column = context.getEntity(colQualifiedName);
 
                 if (column == null) { // 全局entityMap中自动对partition列进行了去重操作
@@ -504,31 +499,45 @@ public abstract class BaseHiveEvent {
                     column.setAttribute(ATTRIBUTE_QUALIFIED_NAME, colQualifiedName);
 
                     String colName = null;
-                    if (partitions.contains(fieldSchema.getName())) { // 如果是分区列, 不改写名字.
-                        colName = fieldSchema.getName();
+
+                    // 如果有血缘分区列
+                    if (rewriter.isLineagePartitioned(table)) {
+                        String lineagePartitionName = rewriter.getLineagePartitionName(table);
+                        List<String> lineagePartitionValues = rewriter.getLineagePartitionValues(table);
+                        List<FieldSchema> partCols = table.getPartCols();
+
+                        if (partCols.contains(fieldSchema)) { // 如果是分区列, 不改写名字.
+                            colName = fieldSchema.getName();
+                        } else {
+                            colName = getRewrittenColumnName(
+                                    fieldSchema.getName(), lineagePartitionName, lineagePartitionValues.get(j));
+                        }
                     } else {
-                        colName = fieldSchema.getName() + "_" + partitionName + "=" + lineagePartitionValues.get(j);
+                        colName = fieldSchema.getName();
                     }
 
                     column.setAttribute(ATTRIBUTE_NAME, colName);
                     column.setAttribute(ATTRIBUTE_OWNER, table.getOwner());
                     column.setAttribute(ATTRIBUTE_COL_TYPE, fieldSchema.getType());
-                    column.setAttribute(ATTRIBUTE_COL_POSITION, columnPosition++);
+
+                    column.setAttribute(ATTRIBUTE_COL_POSITION, i + positionInterval * j);
                     column.setAttribute(ATTRIBUTE_COMMENT, fieldSchema.getComment());
 
-                    // 自动去重, 无需关注
                     context.putEntity(colQualifiedName, column);
                 }
 
-                // 去重
-                if (knownColumns.add(colQualifiedName)) {
-                    ret.add(column);
-                }
+                ret.add(column);
             }
 
         }
 
         return ret;
+    }
+
+    public String getRewrittenColumnName(String columnName,
+                                         String lineagePartitionName,
+                                         String lineagePartitionValue) {
+        return columnName + "_" + lineagePartitionName + "=" + lineagePartitionValue;
     }
 
     protected AtlasEntity getPathEntity(Path path, AtlasEntityExtInfo extInfo) {
@@ -680,62 +689,51 @@ public abstract class BaseHiveEvent {
     }
 
     protected List<String> getQualifiedName(Table table, FieldSchema column) {
+        List<String> ret = new ArrayList<>();
         String tblQualifiedName = getQualifiedName(table);
-
         int sepPos = tblQualifiedName.lastIndexOf(QNAME_SEP_CLUSTER_NAME);
 
-        String tableFullName = table.getDbName() + "." + table.getTableName();
-        String partitionName = context.getColumnNameRewriter().getLineagePartitionName(tableFullName);
-        Set<String> partitions = context.getColumnNameRewriter().getPartitionsForHiveTable(tableFullName);
-        List<String> lineagePartitionValues = context.getColumnNameRewriter().getLineagePartitionValues(tableFullName);
+        List<String> rewrittenColumnNames = getRewrittenColumnNames(table, column);
 
-        List<String> ret = new ArrayList<>();
-        Set<String> knownColumns = new HashSet<>();
-
-        for (String lineagePartitionValue: lineagePartitionValues) {
-            String colName = null;
-            if (partitions.contains(column.getName())) { // 如果是分区列, 不改写名字.
-                colName = column.getName();
-            } else {
-                colName = column.getName() + "_" + partitionName + "=" + lineagePartitionValue;
-            }
-
+        for (String columnName: rewrittenColumnNames) {
             String colQualifiedName = null;
             if (sepPos == -1) {
-                colQualifiedName = tblQualifiedName + QNAME_SEP_ENTITY_NAME + colName.toLowerCase();
+                colQualifiedName = tblQualifiedName + QNAME_SEP_ENTITY_NAME + columnName.toLowerCase();
             } else {
-                colQualifiedName =  tblQualifiedName.substring(0, sepPos)
-                        + QNAME_SEP_ENTITY_NAME + colName.toLowerCase() + tblQualifiedName.substring(sepPos);
+                colQualifiedName = tblQualifiedName.substring(0, sepPos)
+                        + QNAME_SEP_ENTITY_NAME + columnName.toLowerCase() + tblQualifiedName.substring(sepPos);
             }
-
-            if (knownColumns.add(colQualifiedName)) {
-                ret.add(colQualifiedName);
-            }
+            ret.add(colQualifiedName);
         }
-
         return ret;
     }
 
-    protected List<String> getRewritedName(Table table, FieldSchema column) {
-        String tableFullName = table.getDbName() + "." + table.getTableName();
-        List<String> partitionValues = context.getColumnNameRewriter().getPartitionValueForHiveTable(tableFullName);
-        String partitionName = context.getColumnNameRewriter().getLineagePartitionName(tableFullName);
-        Set<String> partitions = context.getColumnNameRewriter().getPartitionsForHiveTable(tableFullName);
-        List<String> lineagePartitionValues = context.getColumnNameRewriter().getLineagePartitionValues(tableFullName);
-
+    protected List<String> getRewrittenColumnNames(Table table, FieldSchema column) {
         List<String> ret = new ArrayList<>();
         Set<String> knownColumns = new HashSet<>();
+        ColumnNameRewriter rewriter = context.getColumnNameRewriter();
 
-        for (String lineagePartitionValue: lineagePartitionValues) {
-            String colName = null;
-            if (partitions.contains(column.getName())) { // 如果是分区列, 不改写名字.
-                colName = column.getName();
-            } else {
-                colName = column.getName() + "_" + partitionName + "=" + lineagePartitionValue;
+        if (rewriter.isLineagePartitioned(table)) {
+            String lineagePartitionName = rewriter.getLineagePartitionName(table);
+            List<String> lineagePartitionValues = rewriter.getLineagePartitionValues(table);
+            List<FieldSchema> partCols = table.getPartCols();
+
+            for (String lineagePartitionValue: lineagePartitionValues) {
+                String colName = null;
+                if (partCols.contains(column)) {
+                    colName = column.getName();
+                } else {
+                    colName = getRewrittenColumnName(
+                            column.getName(), lineagePartitionName, lineagePartitionValue);
+                }
+
+                if (knownColumns.add(colName)) {
+                    ret.add(colName);
+                }
             }
-
-            if (knownColumns.add(colName)) {
-                ret.add(colName);
+        } else {
+            if (knownColumns.add(column.getName())) {
+                ret.add(column.getName());
             }
         }
 
@@ -745,21 +743,35 @@ public abstract class BaseHiveEvent {
     protected String getQualifiedName(DependencyKey column) {
         String dbName    = column.getDataContainer().getTable().getDbName();
         String tableName = column.getDataContainer().getTable().getTableName();
-        String colName   = column.getFieldSchema().getName();
 
-        String tableFullName = dbName + "." + tableName;
-        List<String> partitionValues = context.getColumnNameRewriter().getPartitionValueForHiveTable(tableFullName);
-        String partitionName = context.getColumnNameRewriter().getLineagePartitionName(tableFullName);
-        Set<String> partitions = context.getColumnNameRewriter().getPartitionsForHiveTable(tableFullName);
+        ColumnNameRewriter rewriter = context.getColumnNameRewriter();
+        org.apache.hadoop.hive.metastore.api.Table table = column.getDataContainer().getTable();
 
+        String colName = null;
+        if (rewriter.isLineagePartitioned(table)) {
+            String lineagePartitionName = rewriter.getLineagePartitionName(table);
+            List<String> partitionValues = rewriter.getPartitionValueForHiveTable(table);
+            List<FieldSchema> partCols = getPartCols(table);
 
-        if (partitions.contains(column.getFieldSchema().getName())) { // 如果是分区列, 不改写名字.
-            colName = column.getFieldSchema().getName();
+            if (partCols.contains(column.getFieldSchema())) { // 如果是分区列, 不改写名字.
+                colName = column.getFieldSchema().getName();
+            } else {
+                colName = getRewrittenColumnName(
+                        column.getFieldSchema().getName(), lineagePartitionName, partitionValues.get(0));
+            }
         } else {
-            colName = column.getFieldSchema().getName() + "_" + partitionName + "=" + partitionValues.get(0);
+            colName = column.getFieldSchema().getName();
         }
 
         return getQualifiedName(dbName, tableName, colName);
+    }
+
+    public List<FieldSchema> getPartCols(org.apache.hadoop.hive.metastore.api.Table table) {
+        if (table.getPartitionKeys() != null && table.getPartitionKeys().size() > 0) {
+            return table.getPartitionKeys();
+        } else {
+            return new ArrayList<>();
+        }
     }
 
     protected String getQualifiedName(BaseColumnInfo column) {
@@ -770,15 +782,22 @@ public abstract class BaseHiveEvent {
         FieldSchema fieldSchema = column.getColumn();
 
         if (fieldSchema != null) {
-            String tableFullName = dbName + "." + tableName;
-            List<String> partitionValues = context.getColumnNameRewriter().getPartitionValueForHiveTable(tableFullName);
-            String partitionName = context.getColumnNameRewriter().getLineagePartitionName(tableFullName);
-            Set<String> partitions = context.getColumnNameRewriter().getPartitionsForHiveTable(tableFullName);
+            ColumnNameRewriter rewriter = context.getColumnNameRewriter();
+            org.apache.hadoop.hive.metastore.api.Table table = column.getTabAlias().getTable();
 
-            if (partitions.contains(column.getColumn().getName())) { // 如果是分区列, 不改写名字.
-                colName = column.getColumn().getName();
+            if (rewriter.isLineagePartitioned(table)) {
+                String lineagePartitionName = rewriter.getLineagePartitionName(table);
+                List<String> partitionValues = rewriter.getPartitionValueForHiveTable(table);
+                List<FieldSchema> partCols = getPartCols(table);
+
+                if (partCols.contains(fieldSchema)) { // 如果是分区列, 不改写名字.
+                    colName = fieldSchema.getName();
+                } else {
+                    colName = getRewrittenColumnName(
+                            fieldSchema.getName(), lineagePartitionName, partitionValues.get(0));
+                }
             } else {
-                colName = column.getColumn().getName() + "_" + partitionName + "=" + partitionValues.get(0);
+                colName = fieldSchema.getName();
             }
         }
 
