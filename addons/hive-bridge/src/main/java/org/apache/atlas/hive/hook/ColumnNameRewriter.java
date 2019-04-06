@@ -55,35 +55,6 @@ public class ColumnNameRewriter {
         init();
     }
 
-    public List<String> getPartitionValueForHiveTable(Table table) {
-        return getPartitionValueForHiveTable(getTableFullName(table));
-    }
-
-    public List<String> getPartitionValueForHiveTable(org.apache.hadoop.hive.metastore.api.Table table) {
-        return getPartitionValueForHiveTable(getTableFullName(table));
-    }
-
-    public List<String> getPartitionValueForHiveTable(String hiveTableName) {
-        List<String> partitionValueList = new ArrayList<>();
-        if (hiveTableName.equals("dim.dim_test_table_with_dp_level1")) {
-            partitionValueList.add("CPS");
-        } else if (hiveTableName.equals("dim.dim_test_table_with_dp_level2")) {
-            partitionValueList.add("GDT");
-        } else if (hiveTableName.equals("dim.dim_test_table_with_dp_level3")) {
-            partitionValueList.add("CPS");
-        } else if (hiveTableName.equals("dim.dim_test_table_with_pt_level1")) {
-            partitionValueList.add("RTB");
-        } else if (hiveTableName.equals("dim.dim_test_table_with_pt_level2")) {
-            partitionValueList.add("RTB");
-        } else if (hiveTableName.equals("dim.dim_test_table_with_pt_level3")) {
-            partitionValueList.add("RTB");
-        } else {
-            throw new RuntimeException("Unsupported table!");
-        }
-
-        return partitionValueList;
-    }
-
     public List<String> getLineagePartitionValues(Table table) {
         return getLineagePartitionValues(getTableFullName(table));
     }
