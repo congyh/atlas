@@ -19,6 +19,7 @@
 package org.apache.atlas.hive.hook.events;
 
 import org.apache.atlas.hive.hook.AtlasHiveHookContext;
+import org.apache.atlas.hive.hook.LineageInfoParser;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.notification.HookNotification;
@@ -130,6 +131,12 @@ public class CreateHiveProcess extends BaseHiveEvent {
     }
 
     private void processColumnLineage(AtlasEntity hiveProcess, AtlasEntitiesWithExtInfo entities) {
+        LineageInfoParser lineageInfoParser = new LineageInfoParser(
+                context.getColumnNameRewriter().getHiveTableEntityMap());
+        // 外层调用已经保证了inputs不为空.
+        Set<ReadEntity> inputs = context.getHiveContext().getInputs();
+        Map<String, List<String>> lineagePartitionValuesMap = lineageInfoParser.getInputLineagePartitionValues(inputs);
+
         LineageInfo lineageInfo = getHiveContext().getLinfo();
 
         if (lineageInfo == null || CollectionUtils.isEmpty(lineageInfo.entrySet())) {
@@ -149,16 +156,18 @@ public class CreateHiveProcess extends BaseHiveEvent {
             List<AtlasEntity> inputColumns = new ArrayList<>();
 
             for (BaseColumnInfo baseColumn : getBaseCols(entry.getValue())) {
-                String      inputColName = getQualifiedName(baseColumn);
-                AtlasEntity inputColumn  = context.getEntity(inputColName);
+                List<String>      inputColNames = getQualifiedName(baseColumn, lineagePartitionValuesMap);
+                for (String inputColName: inputColNames) {
+                    AtlasEntity inputColumn  = context.getEntity(inputColName);
 
-                if (inputColumn == null) {
-                    LOG.warn("column-lineage: non-existing input-column {} for output-column={}", inputColName, outputColName);
+                    if (inputColumn == null) {
+                        LOG.warn("column-lineage: non-existing input-column {} for output-column={}", inputColNames, outputColName);
 
-                    continue;
+                        continue;
+                    }
+
+                    inputColumns.add(inputColumn);
                 }
-
-                inputColumns.add(inputColumn);
             }
 
             if (inputColumns.isEmpty()) {

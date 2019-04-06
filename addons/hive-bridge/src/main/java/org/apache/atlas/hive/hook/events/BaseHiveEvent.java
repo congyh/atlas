@@ -795,38 +795,53 @@ public abstract class BaseHiveEvent {
         }
     }
 
-    protected String getQualifiedName(BaseColumnInfo column) {
+    protected List<String> getQualifiedName(BaseColumnInfo column,
+                                            Map<String, List<String>> lineagePartitionValuesMap) {
         String dbName    = column.getTabAlias().getTable().getDbName();
         String tableName = column.getTabAlias().getTable().getTableName();
         String colName   = null;
 
         FieldSchema fieldSchema = column.getColumn();
+        List<String> ret = new ArrayList<>();
+
+        List<String> colNames = new ArrayList<>();
 
         if (fieldSchema != null) {
             ColumnNameRewriter rewriter = context.getColumnNameRewriter();
             org.apache.hadoop.hive.metastore.api.Table table = column.getTabAlias().getTable();
 
             if (rewriter.isLineagePartitioned(table)) {
+                String tableFullName = rewriter.getTableFullName(table);
                 String lineagePartitionName = rewriter.getLineagePartitionName(table);
-                List<String> partitionValues = rewriter.getPartitionValueForHiveTable(table);
+                List<String> lineagePartitionValues = lineagePartitionValuesMap.get(tableFullName);
                 List<FieldSchema> partCols = getPartCols(table);
 
                 if (partCols.contains(fieldSchema)) { // 如果是分区列, 不改写名字.
                     colName = fieldSchema.getName();
+                    colNames.add(colName);
                 } else {
-                    colName = getRewrittenColumnName(
-                            fieldSchema.getName(), lineagePartitionName, partitionValues.get(0));
+                    for (String lineagePartitionValue: lineagePartitionValues) {
+                        colName = getRewrittenColumnName(
+                                fieldSchema.getName(), lineagePartitionName, lineagePartitionValue);
+                        colNames.add(colName);
+                    }
                 }
             } else {
                 colName = fieldSchema.getName();
+                colNames.add(colName);
             }
+
         }
 
         if (colName == null) {
-            return (dbName + QNAME_SEP_ENTITY_NAME + tableName + QNAME_SEP_CLUSTER_NAME).toLowerCase() + getClusterName();
+            ret.add((dbName + QNAME_SEP_ENTITY_NAME + tableName + QNAME_SEP_CLUSTER_NAME).toLowerCase() + getClusterName());
         } else {
-            return (dbName + QNAME_SEP_ENTITY_NAME + tableName + QNAME_SEP_ENTITY_NAME + colName + QNAME_SEP_CLUSTER_NAME).toLowerCase() + getClusterName();
+            for (String name: colNames) {
+                ret.add((dbName + QNAME_SEP_ENTITY_NAME + tableName + QNAME_SEP_ENTITY_NAME + name + QNAME_SEP_CLUSTER_NAME).toLowerCase() + getClusterName());
+            }
         }
+
+        return ret;
     }
 
     protected String getQualifiedName(String dbName, String tableName, String colName) {
