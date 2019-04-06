@@ -51,6 +51,7 @@ public class LineageInfoParser {
      */
     public Map<String, List<String>> getInputLineagePartitionValues(Set<ReadEntity> inputs) {
         Map<String, List<String>> ret = new HashMap<>();
+        Set<String> knownPartitionValues = new HashSet<>();
 
         for (ReadEntity input : inputs) {
             if (input.getType() == Entity.Type.PARTITION) {
@@ -61,12 +62,15 @@ public class LineageInfoParser {
                     String actualLineagePartitionValue =
                             getActualLineagePartitionValue(input, lineagePartitionName);
 
-                    if (ret.containsKey(tableFullName)) {
-                        ret.get(tableFullName).add(actualLineagePartitionValue);
-                    } else {
-                        List<String> actualLineagePartitionValues = new ArrayList<>();
-                        actualLineagePartitionValues.add(actualLineagePartitionValue);
-                        ret.put(tableFullName, actualLineagePartitionValues);
+                    // 多层分区情况下去重
+                    if (knownPartitionValues.add(tableFullName + actualLineagePartitionValue)) {
+                        if (ret.containsKey(tableFullName)) {
+                            ret.get(tableFullName).add(actualLineagePartitionValue);
+                        } else {
+                            List<String> actualLineagePartitionValues = new ArrayList<>();
+                            actualLineagePartitionValues.add(actualLineagePartitionValue);
+                            ret.put(tableFullName, actualLineagePartitionValues);
+                        }
                     }
                 }
             }
