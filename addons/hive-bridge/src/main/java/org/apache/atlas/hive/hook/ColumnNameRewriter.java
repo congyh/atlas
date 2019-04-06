@@ -175,4 +175,8 @@ public class ColumnNameRewriter {
             hiveTableEntityMap.put(entity.getTableName(), entity);
         }
     }
+
+    public Map<String, HiveTableEntity> getHiveTableEntityMap() {
+        return hiveTableEntityMap;
+    }
 }
