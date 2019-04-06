@@ -37,6 +37,7 @@ import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.Order;
 import org.apache.hadoop.hive.metastore.api.SerDeInfo;
 import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
+import org.apache.hadoop.hive.metastore.api.Partition;
 import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.apache.hadoop.hive.ql.hooks.HookContext;
 import org.apache.hadoop.hive.ql.hooks.LineageInfo.BaseColumnInfo;
@@ -740,6 +741,15 @@ public abstract class BaseHiveEvent {
         return ret;
     }
 
+    /**
+     * 列级别血统输出列列名改写
+     *
+     * 对于输出列而言, 由于分区表插入肯定会插入某个具体的分区, 所以不会出现某个血统分区具有多个值的情况,
+     * 对比输入列比较好处理
+     *
+     * @param column 输出列
+     * @return 改写后的输出列名
+     */
     protected String getQualifiedName(DependencyKey column) {
         String dbName    = column.getDataContainer().getTable().getDbName();
         String tableName = column.getDataContainer().getTable().getTableName();
@@ -748,16 +758,27 @@ public abstract class BaseHiveEvent {
         org.apache.hadoop.hive.metastore.api.Table table = column.getDataContainer().getTable();
 
         String colName = null;
+        // 因为是lineage partitioned, 所以首先一定是partitioned
         if (rewriter.isLineagePartitioned(table)) {
             String lineagePartitionName = rewriter.getLineagePartitionName(table);
-            List<String> partitionValues = rewriter.getPartitionValueForHiveTable(table);
+            Partition part = column.getDataContainer().getPartition();
+
             List<FieldSchema> partCols = getPartCols(table);
+
+            String partitionValue = null;
+            for (int i = 0; i < partCols.size(); i++) {
+                // 我们只需要获取血统分区列的值就行了
+                if (partCols.get(i).getName().equals(lineagePartitionName)) {
+                    partitionValue = part.getValues().get(i);
+                    break;
+                }
+            }
 
             if (partCols.contains(column.getFieldSchema())) { // 如果是分区列, 不改写名字.
                 colName = column.getFieldSchema().getName();
             } else {
                 colName = getRewrittenColumnName(
-                        column.getFieldSchema().getName(), lineagePartitionName, partitionValues.get(0));
+                        column.getFieldSchema().getName(), lineagePartitionName, partitionValue);
             }
         } else {
             colName = column.getFieldSchema().getName();
