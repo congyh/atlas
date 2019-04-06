@@ -37,8 +37,6 @@ import java.util.*;
  * config file.
  *
  * WARNING: Only support one level of lineage related partition
- *
- * TODO: 第一版首先假装能够拿到dp的具体值.
  */
 public class ColumnNameRewriter {
 

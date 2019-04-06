@@ -89,7 +89,6 @@ public abstract class BaseHiveEvent {
     public static final String S3A_SCHEME               = "s3a" + SCHEME_SEPARATOR;
 
     public static final String ATTRIBUTE_QUALIFIED_NAME            = "qualifiedName";
-    // Note: TODO: 从这里下手, 找到列名的所有地方.
     public static final String ATTRIBUTE_NAME                      = "name";
     public static final String ATTRIBUTE_DESCRIPTION               = "description";
     public static final String ATTRIBUTE_OWNER                     = "owner";

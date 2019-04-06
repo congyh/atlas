@@ -18,28 +18,32 @@
 
 package org.apache.atlas.hive.hook;
 
+import org.apache.hadoop.hive.metastore.api.FieldSchema;
+import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.apache.hadoop.hive.ql.hooks.ReadEntity;
+import org.apache.hadoop.hive.ql.metadata.Partition;
 
 import java.util.*;
 
 public class LineageInfoParser {
 
-    private Map<String, HiveTableEntity> hiveTableEntityMap;
 
-    public LineageInfoParser(Map<String, HiveTableEntity> hiveTableEntityMap) {
-        this.hiveTableEntityMap = hiveTableEntityMap;
+    private ColumnNameRewriter rewriter;
+
+    public LineageInfoParser(ColumnNameRewriter rewriter) {
+        this.rewriter = rewriter;
     }
 
     /**
      * Returns if the hive table has lineage related partition.
      */
-    public boolean isLineagePartitioned(String hiveTableName) {
-        return hiveTableEntityMap.containsKey(hiveTableName);
+    private boolean isLineagePartitioned(String hiveTableName) {
+        return rewriter.isLineagePartitioned(hiveTableName);
     }
 
     /**
      * 解析sql中的input表里面带血统分区列的表的血统分区具体值
-     *
+     * <p>
      * 注意: 这个方法在一个sql执行中被调用一次就可以了.
      *
      * @param inputs input表
@@ -48,20 +52,22 @@ public class LineageInfoParser {
     public Map<String, List<String>> getInputLineagePartitionValues(Set<ReadEntity> inputs) {
         Map<String, List<String>> ret = new HashMap<>();
 
-        for (ReadEntity input: inputs) {
-            String tableFullName = getTableFullNameFromInput(input);
-            if (isLineagePartitioned(tableFullName)) {
-                String lineagePartitionName = hiveTableEntityMap.get(tableFullName).getLineagePartition();
-                // 如果在lineage table map中, 那么进行partition value值的获取.
-                String actualLineagePartitionValue =
-                        getActualLineagePartionValue(tableFullName, lineagePartitionName, input);
+        for (ReadEntity input : inputs) {
+            if (input.getType() == Entity.Type.PARTITION) {
+                String tableFullName = getTableFullNameFromInput(input);
+                if (isLineagePartitioned(tableFullName)) {
+                    String lineagePartitionName = rewriter.getLineagePartitionName(tableFullName);
+                    // 如果在lineage table map中, 那么进行partition value值的获取.
+                    String actualLineagePartitionValue =
+                            getActualLineagePartitionValue(input, lineagePartitionName);
 
-                if (ret.containsKey(tableFullName)) {
-                    ret.get(tableFullName).add(actualLineagePartitionValue);
-                } else {
-                    List<String> actualLineagePartitionValues = new ArrayList<>();
-                    actualLineagePartitionValues.add(actualLineagePartitionValue);
-                    ret.put(tableFullName, actualLineagePartitionValues);
+                    if (ret.containsKey(tableFullName)) {
+                        ret.get(tableFullName).add(actualLineagePartitionValue);
+                    } else {
+                        List<String> actualLineagePartitionValues = new ArrayList<>();
+                        actualLineagePartitionValues.add(actualLineagePartitionValue);
+                        ret.put(tableFullName, actualLineagePartitionValues);
+                    }
                 }
             }
         }
@@ -69,14 +75,40 @@ public class LineageInfoParser {
         return ret;
     }
 
-    private String getActualLineagePartionValue(String tableFullName, String lineagePartitionName, ReadEntity input) {
-        // TODO: fake first
-        return "";
+    /**
+     * 从input partition中获取血统分区列的值
+     * <p>
+     * 注意: 本调用需要由调用方保证传入的ReadEntity是partition类型的.
+     *
+     * @param input                input table
+     * @param lineagePartitionName 血统分区列列名
+     * @return 血统分区列值
+     */
+    private String getActualLineagePartitionValue(ReadEntity input, String lineagePartitionName) {
+        List<FieldSchema> partCols = input.getPartition().getTable().getPartCols();
+        Partition part = input.getPartition();
+
+        String ret = null;
+
+        for (int i = 0; i < partCols.size(); i++) {
+            if (partCols.get(i).getName().equals(lineagePartitionName)) {
+                ret = part.getValues().get(i);
+                break;
+            }
+        }
+
+        return ret;
     }
 
-    private String getTableFullNameFromInput(ReadEntity inputs) {
-
-        // TODO: fake first
-        return "";
+    /**
+     * 从input table/partition中获取表名
+     * <p>
+     * 注意: 本调用需由调用方保证传入的ReadEntity是table/partition
+     *
+     * @param input input table/partition
+     * @return 表全名
+     */
+    private String getTableFullNameFromInput(ReadEntity input) {
+        return rewriter.getTableFullName(input.getTable());
     }
 }
