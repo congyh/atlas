@@ -85,7 +85,6 @@ public class AlterTableRename extends BaseHiveEvent {
             return ret;
         }
 
-        // TODO: 查看更新tableEntity的逻辑
         AtlasEntityWithExtInfo oldTableEntity = toTableEntity(oldTable);
 
         // first update with oldTable info, so that the table will be created if it is not present in Atlas
