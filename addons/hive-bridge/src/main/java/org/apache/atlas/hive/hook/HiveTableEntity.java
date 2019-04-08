@@ -18,16 +18,21 @@
 
 package org.apache.atlas.hive.hook;
 
+import com.alibaba.fastjson.annotation.JSONField;
+
 import java.util.List;
 
 public class HiveTableEntity {
 
-    public static final String HIVE_TABLE_NAME = "hive_table_name";
-    public static final String HIVE_TABLE_LINEAGE_PARTITION = "hive_lineage_partition";
-    public static final String HIVE_TABLE_LINEAGE_PARTITION_VALUES = "hive_lineage_partition_values";
+    public static final String TABLE_NAME = "table_name";
+    public static final String LINEAGE_PARTITION = "lineage_partition";
+    public static final String LINEAGE_PARTITION_VALUES = "lineage_partition_values";
 
+    @JSONField(name = "table_name")
     private String tableName;
+    @JSONField(name = "lineage_partition")
     private String lineagePartition;
+    @JSONField(name = "lineage_partition_values")
     private List<String> lineagePartitionValues;
 
     public HiveTableEntity(String tableName,

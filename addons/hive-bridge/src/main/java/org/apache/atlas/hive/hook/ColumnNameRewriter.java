@@ -18,7 +18,7 @@
 
 package org.apache.atlas.hive.hook;
 
-//import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSON;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +74,6 @@ public class ColumnNameRewriter {
     }
 
     public String getLineagePartitionName(String hiveTableName) {
-        // TODO: 暂时仅支持一个
         return hiveTableEntityMap.get(hiveTableName).getLineagePartition();
     }
 
@@ -106,39 +105,10 @@ public class ColumnNameRewriter {
     }
 
     private void init() {
-        // TODO: 暂时移除fastjson依赖
-        String hiveTableEntitiesStr = "[{\"hive_table_name\": \"dim.dim_test_table_with_dp_level1\", \"hive_lineage_partitions\": \"dp\"}, {\"hive_table_name\": \"dim.dim_test_table_with_dp_level2\", \"hive_lineage_partitions\": \"dp\"}, {\"hive_table_name\": \"dim.dim_test_table_with_dp_level3\", \"hive_lineage_partition\": \"dp\"}]";
-        HiveTableEntity hiveTableEntity1 = new HiveTableEntity(
-                "dim.dim_test_table_with_dp_level1",
-                "dp",
-                Arrays.asList("RTB", "GDT", "CPS"));
-        HiveTableEntity hiveTableEntity2 = new HiveTableEntity("dim.dim_test_table_with_dp_level2",
-                "dp",
-                Arrays.asList("RTB", "GDT", "CPS"));
-        HiveTableEntity hiveTableEntity3 = new HiveTableEntity(
-                "dim.dim_test_table_with_dp_level3",
-                "dp",
-                Arrays.asList("RTB", "GDT", "CPS"));
-        HiveTableEntity hiveTableEntity4 = new HiveTableEntity(
-                "dim.dim_test_table_with_pt_level1",
-                "pt",
-                Arrays.asList("RTB", "GDT", "CPS"));
-        HiveTableEntity hiveTableEntity5 = new HiveTableEntity(
-                "dim.dim_test_table_with_pt_level2",
-                "pt",
-                Arrays.asList("RTB", "GDT", "CPS"));
-        HiveTableEntity hiveTableEntity6 = new HiveTableEntity(
-                "dim.dim_test_table_with_pt_level3",
-                "pt",
-                Arrays.asList("RTB", "GDT", "CPS"));
-//        List<HiveTableEntity> hiveTableEntities = JSON.parseArray(hiveTableEntitiesStr, HiveTableEntity.class);
-        List<HiveTableEntity> hiveTableEntities = new ArrayList<>();
-        hiveTableEntities.add(hiveTableEntity1);
-        hiveTableEntities.add(hiveTableEntity2);
-        hiveTableEntities.add(hiveTableEntity3);
-        hiveTableEntities.add(hiveTableEntity4);
-        hiveTableEntities.add(hiveTableEntity5);
-        hiveTableEntities.add(hiveTableEntity6);
+        String hiveTableEntitiesStr = "[{\"table_name\": \"dim.dim_test_table_with_dp_level1\", \"lineage_partition\": \"dp\", \"lineage_partition_values\": [\"RTB\", \"GDT\", \"CPS\"]}, {\"table_name\": \"dim.dim_test_table_with_dp_level2\", \"lineage_partition\": \"dp\", \"lineage_partition_values\": [\"RTB\", \"GDT\", \"CPS\"]}, {\"table_name\": \"dim.dim_test_table_with_dp_level3\", \"lineage_partition\": \"dp\", \"lineage_partition_values\": [\"RTB\", \"GDT\", \"CPS\"]},{\"table_name\": \"dim.dim_test_table_with_pt_level1\", \"lineage_partition\": \"pt\", \"lineage_partition_values\": [\"RTB\", \"GDT\", \"CPS\"]}, {\"table_name\": \"dim.dim_test_table_with_pt_level2\", \"lineage_partition\": \"pt\", \"lineage_partition_values\": [\"RTB\", \"GDT\", \"CPS\"]}, {\"table_name\": \"dim.dim_test_table_with_pt_level3\", \"lineage_partition\": \"pt\", \"lineage_partition_values\": [\"RTB\", \"GDT\", \"CPS\"]}]";
+
+        List<HiveTableEntity> hiveTableEntities = JSON.parseArray(hiveTableEntitiesStr, HiveTableEntity.class);
+
         hiveTableEntityMap = new HashMap<>();
         for (HiveTableEntity entity: hiveTableEntities) {
             hiveTableEntityMap.put(entity.getTableName(), entity);
