@@ -537,7 +537,7 @@ public abstract class BaseHiveEvent {
     public String getRewrittenColumnName(String columnName,
                                          String lineagePartitionName,
                                          String lineagePartitionValue) {
-        return columnName + "_" + lineagePartitionName + "=" + lineagePartitionValue;
+        return columnName + "^" + lineagePartitionName + "=" + lineagePartitionValue;
     }
 
     protected AtlasEntity getPathEntity(Path path, AtlasEntityExtInfo extInfo) {
