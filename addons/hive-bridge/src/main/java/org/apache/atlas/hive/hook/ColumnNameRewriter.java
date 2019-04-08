@@ -122,15 +122,15 @@ public class ColumnNameRewriter {
         HiveTableEntity hiveTableEntity4 = new HiveTableEntity(
                 "dim.dim_test_table_with_pt_level1",
                 "pt",
-                Arrays.asList("RTB"));
+                Arrays.asList("RTB", "GDT", "CPS"));
         HiveTableEntity hiveTableEntity5 = new HiveTableEntity(
                 "dim.dim_test_table_with_pt_level2",
                 "pt",
-                Arrays.asList("RTB"));
+                Arrays.asList("RTB", "GDT", "CPS"));
         HiveTableEntity hiveTableEntity6 = new HiveTableEntity(
-                "dim.dim_test_table_with_pt_level2",
+                "dim.dim_test_table_with_pt_level3",
                 "pt",
-                Arrays.asList("RTB"));
+                Arrays.asList("RTB", "GDT", "CPS"));
 //        List<HiveTableEntity> hiveTableEntities = JSON.parseArray(hiveTableEntitiesStr, HiveTableEntity.class);
         List<HiveTableEntity> hiveTableEntities = new ArrayList<>();
         hiveTableEntities.add(hiveTableEntity1);
