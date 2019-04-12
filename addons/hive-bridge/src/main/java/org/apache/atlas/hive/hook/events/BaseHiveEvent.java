@@ -819,6 +819,7 @@ public abstract class BaseHiveEvent {
                     colName = fieldSchema.getName();
                     colNames.add(colName);
                 } else {
+                    // TODO: 当前在输入分区没有值的情况下, lineagePartitionValues为空. 需要升级
                     for (String lineagePartitionValue: lineagePartitionValues) {
                         colName = getRewrittenColumnName(
                                 fieldSchema.getName(), lineagePartitionName, lineagePartitionValue);
