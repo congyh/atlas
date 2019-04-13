@@ -4,20 +4,29 @@ import java.util.List;
 import java.util.Map;
 
 public class LineageParseContext {
-    private Map<String, List<String>> lineagePartitionValues;
 
-    // TODO: 需要包含表名信息
-    // TODO: lineagePartiton信息表.
+    private HiveLineageTableInfo hiveLineageTableInfo;
 
-    public LineageParseContext(Map<String, List<String>> map) {
-        this.lineagePartitionValues = map;
+    private Map<String, List<String>> actualLineagePartVals;
+
+    public LineageParseContext(HiveLineageTableInfo tableInfo, Map<String, List<String>> map) {
+        this.hiveLineageTableInfo = tableInfo;
+        this.actualLineagePartVals = map;
     }
 
-    public Map<String, List<String>> getLineagePartitionValues() {
-        return lineagePartitionValues;
+    public HiveLineageTableInfo getHiveLineageTableInfo() {
+        return hiveLineageTableInfo;
     }
 
-    public void setLineagePartitionValues(Map<String, List<String>> lineagePartitionValues) {
-        this.lineagePartitionValues = lineagePartitionValues;
+    public void setHiveLineageTableInfo(HiveLineageTableInfo hiveLineageTableInfo) {
+        this.hiveLineageTableInfo = hiveLineageTableInfo;
+    }
+
+    public Map<String, List<String>> getActualLineagePartVals() {
+        return actualLineagePartVals;
+    }
+
+    public void setActualLineagePartVals(Map<String, List<String>> actualLineagePartVals) {
+        this.actualLineagePartVals = actualLineagePartVals;
     }
 }
