@@ -46,17 +46,17 @@ import java.util.Map;
  *
  * WARNING: Only support one level of lineage related partition
  */
-public class ColumnNameRewriter {
+public class HiveLineageTableInfo {
 
-    private static final Logger logger = LoggerFactory.getLogger(ColumnNameRewriter.class);
+    private static final Logger logger = LoggerFactory.getLogger(HiveLineageTableInfo.class);
 
-    private Map<String, HiveTableEntity> hiveTableEntityMap;
+    private Map<String, HiveLineageTableEntity> hiveTableEntityMap;
 
-    public ColumnNameRewriter(Map<String, HiveTableEntity> hiveTableEntityMap) {
+    public HiveLineageTableInfo(Map<String, HiveLineageTableEntity> hiveTableEntityMap) {
         this.hiveTableEntityMap = hiveTableEntityMap;
     }
 
-    public ColumnNameRewriter() {
+    public HiveLineageTableInfo() {
         init();
     }
 
@@ -149,15 +149,15 @@ public class ColumnNameRewriter {
             }
         }
 
-        List<HiveTableEntity> hiveTableEntities = JSON.parseArray(hiveTableEntitiesStr, HiveTableEntity.class);
+        List<HiveLineageTableEntity> hiveTableEntities = JSON.parseArray(hiveTableEntitiesStr, HiveLineageTableEntity.class);
 
         hiveTableEntityMap = new HashMap<>();
-        for (HiveTableEntity entity: hiveTableEntities) {
+        for (HiveLineageTableEntity entity: hiveTableEntities) {
             hiveTableEntityMap.put(entity.getTableName(), entity);
         }
     }
 
-    public Map<String, HiveTableEntity> getHiveTableEntityMap() {
+    public Map<String, HiveLineageTableEntity> getHiveTableEntityMap() {
         return hiveTableEntityMap;
     }
 }

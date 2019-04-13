@@ -22,7 +22,7 @@ import com.alibaba.fastjson.annotation.JSONField;
 
 import java.util.List;
 
-public class HiveTableEntity {
+public class HiveLineageTableEntity {
 
     public static final String TABLE_NAME = "table_name";
     public static final String LINEAGE_PARTITION = "lineage_partition";
@@ -35,9 +35,9 @@ public class HiveTableEntity {
     @JSONField(name = "lineage_partition_values")
     private List<String> lineagePartitionValues;
 
-    public HiveTableEntity(String tableName,
-                           String lineagePartition,
-                           List<String> lineagePartitionValues) {
+    public HiveLineageTableEntity(String tableName,
+                                  String lineagePartition,
+                                  List<String> lineagePartitionValues) {
         this.tableName = tableName;
         this.lineagePartition = lineagePartition;
         this.lineagePartitionValues = lineagePartitionValues;

@@ -45,14 +45,14 @@ public class AtlasHiveHookContext {
     private final HookContext              hiveContext;
     private final Hive                     hive;
     private final Map<String, AtlasEntity> qNameEntityMap = new HashMap<>();
-    private final ColumnNameRewriter columnNameRewriter;
+    private final HiveLineageTableInfo hiveLineageTableInfo;
 
-    public AtlasHiveHookContext(HiveHook hook, HiveOperation hiveOperation, HookContext hiveContext, ColumnNameRewriter columnNameRewriter) throws Exception {
+    public AtlasHiveHookContext(HiveHook hook, HiveOperation hiveOperation, HookContext hiveContext, HiveLineageTableInfo hiveLineageTableInfo) throws Exception {
         this.hook          = hook;
         this.hiveOperation = hiveOperation;
         this.hiveContext   = hiveContext;
         this.hive          = Hive.get(hiveContext.getConf());
-        this.columnNameRewriter = columnNameRewriter;
+        this.hiveLineageTableInfo = hiveLineageTableInfo;
 
         init();
     }
@@ -65,8 +65,8 @@ public class AtlasHiveHookContext {
         return hive;
     }
 
-    public ColumnNameRewriter getColumnNameRewriter() {
-        return columnNameRewriter;
+    public HiveLineageTableInfo getHiveLineageTableInfo() {
+        return hiveLineageTableInfo;
     }
 
     public HiveOperation getHiveOperation() {

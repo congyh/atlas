@@ -28,9 +28,9 @@ import java.util.*;
 public class LineageInfoParser {
 
 
-    private ColumnNameRewriter rewriter;
+    private HiveLineageTableInfo rewriter;
 
-    public LineageInfoParser(ColumnNameRewriter rewriter) {
+    public LineageInfoParser(HiveLineageTableInfo rewriter) {
         this.rewriter = rewriter;
     }
 

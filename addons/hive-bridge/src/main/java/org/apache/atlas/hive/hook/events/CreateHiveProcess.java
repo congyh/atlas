@@ -131,7 +131,7 @@ public class CreateHiveProcess extends BaseHiveEvent {
     }
 
     private void processColumnLineage(AtlasEntity hiveProcess, AtlasEntitiesWithExtInfo entities) {
-        LineageInfoParser lineageInfoParser = new LineageInfoParser(context.getColumnNameRewriter());
+        LineageInfoParser lineageInfoParser = new LineageInfoParser(context.getHiveLineageTableInfo());
         // 外层调用已经保证了inputs不为空.
         Set<ReadEntity> inputs = context.getHiveContext().getInputs();
         Map<String, List<String>> lineagePartitionValuesMap = lineageInfoParser.getInputLineagePartitionValues(inputs);

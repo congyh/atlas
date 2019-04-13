@@ -19,7 +19,7 @@
 package org.apache.atlas.hive.hook.events;
 
 import org.apache.atlas.hive.hook.AtlasHiveHookContext;
-import org.apache.atlas.hive.hook.ColumnNameRewriter;
+import org.apache.atlas.hive.hook.HiveLineageTableInfo;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
@@ -477,7 +477,7 @@ public abstract class BaseHiveEvent {
         int positionInterval = 1000;
         for (int i = 0; i < fieldSchemas.size(); i++) {
 
-            ColumnNameRewriter rewriter = context.getColumnNameRewriter();
+            HiveLineageTableInfo lineageTableInfo = context.getHiveLineageTableInfo();
             FieldSchema fieldSchema = fieldSchemas.get(i);
             List<String> colQualifiedNames = getQualifiedName(table, fieldSchema);
 
@@ -501,9 +501,9 @@ public abstract class BaseHiveEvent {
                     String colName = null;
 
                     // 如果有血缘分区列
-                    if (rewriter.isLineagePartitioned(table)) {
-                        String lineagePartitionName = rewriter.getLineagePartitionName(table);
-                        List<String> lineagePartitionValues = rewriter.getLineagePartitionValues(table);
+                    if (lineageTableInfo.isLineagePartitioned(table)) {
+                        String lineagePartitionName = lineageTableInfo.getLineagePartitionName(table);
+                        List<String> lineagePartitionValues = lineageTableInfo.getLineagePartitionValues(table);
                         List<FieldSchema> partCols = table.getPartCols();
 
                         if (partCols.contains(fieldSchema)) { // 如果是分区列, 不改写名字.
@@ -711,11 +711,11 @@ public abstract class BaseHiveEvent {
     protected List<String> getRewrittenColumnNames(Table table, FieldSchema column) {
         List<String> ret = new ArrayList<>();
         Set<String> knownColumns = new HashSet<>();
-        ColumnNameRewriter rewriter = context.getColumnNameRewriter();
+        HiveLineageTableInfo lineageTableInfo = context.getHiveLineageTableInfo();
 
-        if (rewriter.isLineagePartitioned(table)) {
-            String lineagePartitionName = rewriter.getLineagePartitionName(table);
-            List<String> lineagePartitionValues = rewriter.getLineagePartitionValues(table);
+        if (lineageTableInfo.isLineagePartitioned(table)) {
+            String lineagePartitionName = lineageTableInfo.getLineagePartitionName(table);
+            List<String> lineagePartitionValues = lineageTableInfo.getLineagePartitionValues(table);
             List<FieldSchema> partCols = table.getPartCols();
 
             for (String lineagePartitionValue: lineagePartitionValues) {
@@ -753,13 +753,13 @@ public abstract class BaseHiveEvent {
         String dbName    = column.getDataContainer().getTable().getDbName();
         String tableName = column.getDataContainer().getTable().getTableName();
 
-        ColumnNameRewriter rewriter = context.getColumnNameRewriter();
+        HiveLineageTableInfo lineageTableInfo = context.getHiveLineageTableInfo();
         org.apache.hadoop.hive.metastore.api.Table table = column.getDataContainer().getTable();
 
         String colName = null;
         // 因为是lineage partitioned, 所以首先一定是partitioned
-        if (rewriter.isLineagePartitioned(table)) {
-            String lineagePartitionName = rewriter.getLineagePartitionName(table);
+        if (lineageTableInfo.isLineagePartitioned(table)) {
+            String lineagePartitionName = lineageTableInfo.getLineagePartitionName(table);
             Partition part = column.getDataContainer().getPartition();
 
             List<FieldSchema> partCols = getPartCols(table);
@@ -806,12 +806,12 @@ public abstract class BaseHiveEvent {
         List<String> colNames = new ArrayList<>();
 
         if (fieldSchema != null) {
-            ColumnNameRewriter rewriter = context.getColumnNameRewriter();
+            HiveLineageTableInfo lineageTableInfo = context.getHiveLineageTableInfo();
             org.apache.hadoop.hive.metastore.api.Table table = column.getTabAlias().getTable();
 
-            if (rewriter.isLineagePartitioned(table)) {
-                String tableFullName = rewriter.getTableFullName(table);
-                String lineagePartitionName = rewriter.getLineagePartitionName(table);
+            if (lineageTableInfo.isLineagePartitioned(table)) {
+                String tableFullName = lineageTableInfo.getTableFullName(table);
+                String lineagePartitionName = lineageTableInfo.getLineagePartitionName(table);
                 List<String> lineagePartitionValues = lineagePartitionValuesMap.get(tableFullName);
                 List<FieldSchema> partCols = getPartCols(table);
 
