@@ -96,16 +96,27 @@ public class LineageParser {
     }
 
     /**
-     * 如果lineage列没有在where条件中出现, 那么就是取所有合法值.
+     * lineage partition values合法性检测
+     *
+     * 1. 如果lineage列没有在where条件中出现, 那么就是取所有合法值.
+     * 2. 如果lineage列有在where中出现, 但是值不是合法的, 去除;
+     *
+     * 注意: 本方法建议在解析之后调用.
      */
     public void makeUpActualLineagePartitionValues() {
         for (String tableName: inputTableDbNames.keySet()) {
-            if (isLineagePartitioned(tableName)
-                    && !actualLineagePartVals.containsKey(tableName)) {
+            if (isLineagePartitioned(tableName)) {
                 String tableFullName = getTableFullNameFromInputs(tableName);
                 List<String> lineagePartitionValues =
                         hiveLineageTableInfo.getLineagePartitionValues(tableFullName);
-                actualLineagePartVals.put(tableName, new HashSet<>(lineagePartitionValues));
+                if (!actualLineagePartVals.containsKey(tableName)) {
+                    actualLineagePartVals.put(tableName, new HashSet<>(lineagePartitionValues));
+                } else {
+                     Set<String> set1 = new HashSet<>(lineagePartitionValues);
+                     Set<String> set2 = new HashSet<>(actualLineagePartVals.get(tableName));
+                     set2.retainAll(set1);
+                     actualLineagePartVals.put(tableName, set2);
+                 }
             }
         }
     }
