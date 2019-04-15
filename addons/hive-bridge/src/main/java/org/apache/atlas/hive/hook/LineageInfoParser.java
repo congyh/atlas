@@ -25,6 +25,7 @@ import org.apache.hadoop.hive.ql.metadata.Partition;
 
 import java.util.*;
 
+@Deprecated
 public class LineageInfoParser {
 
 
