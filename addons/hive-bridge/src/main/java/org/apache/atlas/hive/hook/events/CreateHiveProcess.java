@@ -152,6 +152,7 @@ public class CreateHiveProcess extends BaseHiveEvent {
         for (SQLExpr expr: exprs) {
             parser.getColumnValuePair(expr);
         }
+        parser.makeUpActualLineagePartitionValues();
 
         Map<String, Set<String>> lineagePartitionValuesMap = parser.getActualLineagePartVals();
 
