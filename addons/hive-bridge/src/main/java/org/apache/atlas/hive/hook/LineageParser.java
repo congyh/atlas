@@ -63,51 +63,6 @@ public class LineageParser {
         generateTableDbNameFromInputs();
     }
 
-    public static void main(String[] args) throws JSQLParserException {
-        final String dbType = JdbcConstants.HIVE;
-        List<SQLExpr> exprs = new ArrayList<>();
-        // expect RTB, GDT
-        exprs.add(SQLUtils.toSQLExpr("(dim_test_table_with_pt_level1.pt IN ('RTB', 'GDT') AND dim_test_table_with_pt_level1.dt = '2019-04-08') OR 'CPS' = dim_a.pt", dbType));
-        // expect GDT
-        exprs.add(SQLUtils.toSQLExpr("dim_test_table_with_pt_level1.pt not in ('RTB', 'CPS')"));
-        // expect GDT, CPS
-        exprs.add(SQLUtils.toSQLExpr("dim_test_table_with_pt_level1.pt <> 'RTB'"));
-        // expect GDT, CPS
-        exprs.add(SQLUtils.toSQLExpr("(dim_test_table_with_pt_level1.pt != 'RTB' AND 1 = 1) OR 2 = 2"));
-        // expect RTB
-        exprs.add(SQLUtils.toSQLExpr("dim_test_table_with_pt_level1.pt = 'RTB'"));
-        // expect {}
-        exprs.add(SQLUtils.toSQLExpr("(dim_a.pt != 'RTB' AND 1 = 1) OR 2 = 2"));
-
-        HiveLineageTableInfo lineageTableInfo = new HiveLineageTableInfo();
-
-        // TODO: fake first
-        Set<ReadEntity> inputs = new HashSet<>();
-        Map<String, String> inputTableDbNames = new HashMap<>();
-        inputTableDbNames.put("dim_test_table_with_pt_level1", "dim");
-
-        for (SQLExpr expr : exprs) {
-            LineageParser parser = new LineageParser(lineageTableInfo, inputs, inputTableDbNames, new HashMap<>());
-            parser.getColumnValuePair(expr);
-            System.out.println(parser.getActualLineagePartVals());
-        }
-    }
-
-    private void generateTableDbNameFromInputs() {
-        if (inputTableDbNames == null || inputTableDbNames.isEmpty()) {
-            inputTableDbNames = new HashMap<>();
-            for (ReadEntity input : inputs) {
-                if (input.getType() == Entity.Type.TABLE) {
-                    inputTableDbNames.put(input.getTable().getTableName(), input.getTable().getDbName());
-                }
-            }
-        }
-    }
-
-    private String getTableFullNameFromInputs(String tableName) {
-        return inputTableDbNames.get(tableName) + "." + tableName;
-    }
-
     public void getColumnValuePair(SQLExpr expr) {
         if (expr instanceof SQLBinaryOpExpr) {
             SQLBinaryOpExpr boExpr = (SQLBinaryOpExpr) expr;
@@ -138,6 +93,36 @@ public class LineageParser {
 
             putValues(values, fieldName);
         }
+    }
+
+    /**
+     * 如果lineage列没有在where条件中出现, 那么就是取所有合法值.
+     */
+    public void makeUpActualLineagePartitionValues() {
+        for (String tableName: inputTableDbNames.keySet()) {
+            if (isLineagePartitioned(tableName)
+                    && !actualLineagePartVals.containsKey(tableName)) {
+                String tableFullName = getTableFullNameFromInputs(tableName);
+                List<String> lineagePartitionValues =
+                        hiveLineageTableInfo.getLineagePartitionValues(tableFullName);
+                actualLineagePartVals.put(tableName, new HashSet<>(lineagePartitionValues));
+            }
+        }
+    }
+
+    private void generateTableDbNameFromInputs() {
+        if (inputTableDbNames == null || inputTableDbNames.isEmpty()) {
+            inputTableDbNames = new HashMap<>();
+            for (ReadEntity input : inputs) {
+                if (input.getType() == Entity.Type.TABLE) {
+                    inputTableDbNames.put(input.getTable().getTableName(), input.getTable().getDbName());
+                }
+            }
+        }
+    }
+
+    private String getTableFullNameFromInputs(String tableName) {
+        return inputTableDbNames.get(tableName) + "." + tableName;
     }
 
     private String getFieldName(SQLInListExpr expr) {
@@ -259,6 +244,36 @@ public class LineageParser {
 
     public void setActualLineagePartVals(Map<String, Set<String>> actualLineagePartVals) {
         this.actualLineagePartVals = actualLineagePartVals;
+    }
+
+    public static void main(String[] args) throws JSQLParserException {
+        final String dbType = JdbcConstants.HIVE;
+        List<SQLExpr> exprs = new ArrayList<>();
+        // expect RTB, GDT
+        exprs.add(SQLUtils.toSQLExpr("(dim_test_table_with_pt_level1.pt IN ('RTB', 'GDT') AND dim_test_table_with_pt_level1.dt = '2019-04-08') OR 'CPS' = dim_a.pt", dbType));
+        // expect GDT
+        exprs.add(SQLUtils.toSQLExpr("dim_test_table_with_pt_level1.pt not in ('RTB', 'CPS')"));
+        // expect GDT, CPS
+        exprs.add(SQLUtils.toSQLExpr("dim_test_table_with_pt_level1.pt <> 'RTB'"));
+        // expect GDT, CPS
+        exprs.add(SQLUtils.toSQLExpr("(dim_test_table_with_pt_level1.pt != 'RTB' AND 1 = 1) OR 2 = 2"));
+        // expect RTB
+        exprs.add(SQLUtils.toSQLExpr("dim_test_table_with_pt_level1.pt = 'RTB'"));
+        // expect {}
+        exprs.add(SQLUtils.toSQLExpr("(dim_a.pt != 'RTB' AND 1 = 1) OR 2 = 2"));
+
+        HiveLineageTableInfo lineageTableInfo = new HiveLineageTableInfo();
+
+        // TODO: fake first
+        Set<ReadEntity> inputs = new HashSet<>();
+        Map<String, String> inputTableDbNames = new HashMap<>();
+        inputTableDbNames.put("dim_test_table_with_pt_level1", "dim");
+
+        for (SQLExpr expr : exprs) {
+            LineageParser parser = new LineageParser(lineageTableInfo, inputs, inputTableDbNames, new HashMap<>());
+            parser.getColumnValuePair(expr);
+            System.out.println(parser.getActualLineagePartVals());
+        }
     }
 
     private static void druidExample1() {
