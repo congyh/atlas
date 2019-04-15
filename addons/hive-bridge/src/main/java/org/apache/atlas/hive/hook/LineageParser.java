@@ -47,6 +47,8 @@ public class LineageParser {
     public LineageParser(HiveLineageTableInfo hiveLineageTableInfo, Set<ReadEntity> inputs) {
         this.hiveLineageTableInfo = hiveLineageTableInfo;
         this.inputs = inputs;
+
+        generateTableDbNameFromInputs();
     }
 
     public LineageParser(HiveLineageTableInfo hiveLineageTableInfo,
@@ -106,7 +108,7 @@ public class LineageParser {
         return inputTableDbNames.get(tableName) + "." + tableName;
     }
 
-    private void getColumnValuePair(SQLExpr expr) {
+    public void getColumnValuePair(SQLExpr expr) {
         if (expr instanceof SQLBinaryOpExpr) {
             SQLBinaryOpExpr boExpr = (SQLBinaryOpExpr) expr;
             SQLExpr leftExpr = boExpr.getLeft();
