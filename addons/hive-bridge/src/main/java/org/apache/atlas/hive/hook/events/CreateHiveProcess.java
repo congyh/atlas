@@ -18,34 +18,32 @@
 
 package org.apache.atlas.hive.hook.events;
 
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.util.JdbcConstants;
 import org.apache.atlas.hive.hook.AtlasHiveHookContext;
 import org.apache.atlas.hive.hook.LineageInfoParser;
+import org.apache.atlas.hive.hook.LineageParser;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.model.notification.HookNotification.EntityCreateRequestV2;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.hadoop.hive.ql.hooks.Entity;
-import org.apache.hadoop.hive.ql.hooks.HookContext;
-import org.apache.hadoop.hive.ql.hooks.LineageInfo;
+import org.apache.hadoop.hive.common.ObjectPair;
+import org.apache.hadoop.hive.ql.exec.SelectOperator;
+import org.apache.hadoop.hive.ql.hooks.*;
 import org.apache.hadoop.hive.ql.hooks.LineageInfo.BaseColumnInfo;
 import org.apache.hadoop.hive.ql.hooks.LineageInfo.Dependency;
 import org.apache.hadoop.hive.ql.hooks.LineageInfo.DependencyKey;
-import org.apache.hadoop.hive.ql.hooks.ReadEntity;
-import org.apache.hadoop.hive.ql.hooks.WriteEntity;
+import org.apache.hadoop.hive.ql.metadata.Table;
+import org.apache.hadoop.hive.ql.optimizer.lineage.LineageCtx;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 
 public class CreateHiveProcess extends BaseHiveEvent {
@@ -131,10 +129,31 @@ public class CreateHiveProcess extends BaseHiveEvent {
     }
 
     private void processColumnLineage(AtlasEntity hiveProcess, AtlasEntitiesWithExtInfo entities) {
-        LineageInfoParser lineageInfoParser = new LineageInfoParser(context.getHiveLineageTableInfo());
         // 外层调用已经保证了inputs不为空.
         Set<ReadEntity> inputs = context.getHiveContext().getInputs();
-        Map<String, List<String>> lineagePartitionValuesMap = lineageInfoParser.getInputLineagePartitionValues(inputs);
+        LineageParser parser = new LineageParser(context.getHiveLineageTableInfo(), inputs);
+        // hive1.2.1版本的HookContext是没有Index的, 所以需要升级atlas依赖的hive版本
+        LineageCtx.Index index = context.getHiveContext().getIndex();
+        Map<String, ObjectPair<SelectOperator,
+                Table>> finalSelOps = index.getFinalSelectOps();
+        final String dbType = JdbcConstants.HIVE;
+        List<SQLExpr> exprs = new ArrayList<>();
+        for (ObjectPair<SelectOperator,
+                org.apache.hadoop.hive.ql.metadata.Table> pair: finalSelOps.values()) {
+            SelectOperator finalSelOp = pair.getFirst();
+            Set<LineageInfo.Predicate> conds = index.getPredicates(finalSelOp);
+            if (conds != null && !conds.isEmpty()) {
+                for (LineageInfo.Predicate cond: conds) {
+                    exprs.add(SQLUtils.toSQLExpr(cond.getExpr(), dbType));
+                }
+            }
+        }
+
+        for (SQLExpr expr: exprs) {
+            parser.getColumnValuePair(expr);
+        }
+
+        Map<String, Set<String>> lineagePartitionValuesMap = parser.getActualLineagePartVals();
 
         LineageInfo lineageInfo = getHiveContext().getLinfo();
 

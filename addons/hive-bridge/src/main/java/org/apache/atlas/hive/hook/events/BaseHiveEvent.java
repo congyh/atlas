@@ -795,7 +795,7 @@ public abstract class BaseHiveEvent {
     }
 
     protected List<String> getQualifiedName(BaseColumnInfo column,
-                                            Map<String, List<String>> lineagePartitionValuesMap) {
+                                            Map<String, Set<String>> lineagePartitionValuesMap) {
         String dbName    = column.getTabAlias().getTable().getDbName();
         String tableName = column.getTabAlias().getTable().getTableName();
         String colName   = null;
@@ -810,9 +810,9 @@ public abstract class BaseHiveEvent {
             org.apache.hadoop.hive.metastore.api.Table table = column.getTabAlias().getTable();
 
             if (lineageTableInfo.isLineagePartitioned(table)) {
-                String tableFullName = lineageTableInfo.getTableFullName(table);
                 String lineagePartitionName = lineageTableInfo.getLineagePartitionName(table);
-                List<String> lineagePartitionValues = lineagePartitionValuesMap.get(tableFullName);
+                // 无需使用表全名
+                Set<String> lineagePartitionValues = lineagePartitionValuesMap.get(tableName);
                 List<FieldSchema> partCols = getPartCols(table);
 
                 if (partCols.contains(fieldSchema)) { // 如果是分区列, 不改写名字.
