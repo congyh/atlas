@@ -199,10 +199,10 @@ public class HiveHookIT extends HiveITBase {
         final ReadEntity entity = new ReadEntity();
 
         if (Entity.Type.DFS_DIR.equals(entityType)) {
-            entity.setName(lower(new Path(inputName).toString()));
+//            entity.setName(lower(new Path(inputName).toString()));
             entity.setTyp(Entity.Type.DFS_DIR);
         } else {
-            entity.setName(getQualifiedTblName(inputName));
+//            entity.setName(getQualifiedTblName(inputName));
             entity.setTyp(entityType);
         }
 
@@ -217,10 +217,10 @@ public class HiveHookIT extends HiveITBase {
         final WriteEntity entity = new WriteEntity();
 
         if (Entity.Type.DFS_DIR.equals(entityType) || Entity.Type.LOCAL_DIR.equals(entityType)) {
-            entity.setName(lower(new Path(inputName).toString()));
+//            entity.setName(lower(new Path(inputName).toString()));
             entity.setTyp(entityType);
         } else {
-            entity.setName(getQualifiedTblName(inputName));
+//            entity.setName(getQualifiedTblName(inputName));
             entity.setTyp(entityType);
         }
 
@@ -715,7 +715,7 @@ public class HiveHookIT extends HiveITBase {
         Set<ReadEntity> inputs = getInputs(tableName, Entity.Type.TABLE);
         Set<WriteEntity> outputs = getOutputs(insertTableName, Entity.Type.TABLE);
 
-        outputs.iterator().next().setName(getQualifiedTblName(insertTableName + HiveMetaStoreBridge.TEMP_TABLE_PREFIX + SessionState.get().getSessionId()));
+//        outputs.iterator().next().setName(getQualifiedTblName(insertTableName + HiveMetaStoreBridge.TEMP_TABLE_PREFIX + SessionState.get().getSessionId()));
         outputs.iterator().next().setWriteType(WriteEntity.WriteType.INSERT);
 
         validateProcess(constructEvent(query,  HiveOperation.QUERY, inputs, outputs));
@@ -1538,7 +1538,7 @@ public class HiveHookIT extends HiveITBase {
     private WriteEntity getPartitionOutput() {
         WriteEntity partEntity = new WriteEntity();
 
-        partEntity.setName(PART_FILE);
+//        partEntity.setName(PART_FILE);
         partEntity.setTyp(Entity.Type.PARTITION);
 
         return partEntity;
@@ -1547,7 +1547,7 @@ public class HiveHookIT extends HiveITBase {
     private ReadEntity getPartitionInput() {
         ReadEntity partEntity = new ReadEntity();
 
-        partEntity.setName(PART_FILE);
+//        partEntity.setName(PART_FILE);
         partEntity.setTyp(Entity.Type.PARTITION);
 
         return partEntity;
