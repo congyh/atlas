@@ -10,6 +10,7 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.visitor.SQLASTOutputVisitor;
 import com.alibaba.druid.util.JdbcConstants;
 import net.sf.jsqlparser.JSQLParserException;
+import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 
 import java.util.*;
@@ -19,8 +20,27 @@ public class LineageParser {
 
     private HiveLineageTableInfo hiveLineageTableInfo;
 
-    public LineageParser(HiveLineageTableInfo hiveLineageTableInfo) {
+    private Map<String, String> inputTableDbNames= new HashMap<>();
+
+    private Map<String, List<String>> actualLineagePartVals = new HashMap<>();
+
+    private Set<ReadEntity> inputs;
+
+    public LineageParser(HiveLineageTableInfo hiveLineageTableInfo, Set<ReadEntity> inputs) {
         this.hiveLineageTableInfo = hiveLineageTableInfo;
+        this.inputs = inputs;
+    }
+
+    public LineageParser(HiveLineageTableInfo hiveLineageTableInfo,
+                         Set<ReadEntity> inputs,
+                         Map<String, String> inputTableDbNames,
+                         Map<String, List<String>> actualLineagePartVals) {
+        this.hiveLineageTableInfo = hiveLineageTableInfo;
+        this.inputs = inputs;
+        this.inputTableDbNames = inputTableDbNames;
+        this.actualLineagePartVals = actualLineagePartVals;
+
+        generateTableDbNameFromInputs();
     }
 
     public static void main(String[] args) throws JSQLParserException {
@@ -40,50 +60,52 @@ public class LineageParser {
         exprs.add(SQLUtils.toSQLExpr("(dim_a.pt != 'RTB' AND 1 = 1) OR 2 = 2"));
 
         HiveLineageTableInfo lineageTableInfo = new HiveLineageTableInfo();
-        LineageParser parser = new LineageParser(lineageTableInfo);
 
-        for (SQLExpr expr: exprs) {
-            LineageParseContext context = new LineageParseContext(lineageTableInfo, new HashMap<>());
-            parser.getColumnValuePair(expr, context);
-            System.out.println(context.getActualLineagePartVals());
+        // TODO: fake first
+        Set<ReadEntity> inputs = new HashSet<>();
+        Map<String, String> inputTableDbNames = new HashMap<>();
+        inputTableDbNames.put("dim_test_table_with_pt_level1", "dim");
+
+        for (SQLExpr expr : exprs) {
+            LineageParser parser = new LineageParser(lineageTableInfo, inputs, inputTableDbNames, new HashMap<>());
+            parser.getColumnValuePair(expr);
+            System.out.println(parser.getActualLineagePartVals());
         }
     }
 
-//    /**
-//     * 从input table/partition中获取表名
-//     * <p>
-//     * 注意: 本调用需由调用方保证传入的ReadEntity是table/partition
-//     *
-//     * @param input input table/partition
-//     * @return 表全名
-//     */
-//    public String getTableFullNameFromInput(ReadEntity input) {
-//        return hiveLineageTableInfo.getTableFullName(input.getTable());
-//    }
-
-    public String getTableFullNameFromInput(String tableName) {
-        // TODO: fake first.
-        return "dim." + tableName;
+    private void generateTableDbNameFromInputs() {
+        if (inputTableDbNames == null || inputTableDbNames.isEmpty()) {
+            inputTableDbNames = new HashMap<>();
+            for (ReadEntity input : inputs) {
+                if (input.getType() == Entity.Type.TABLE) {
+                    inputTableDbNames.put(input.getTable().getTableName(), input.getTable().getDbName());
+                }
+            }
+        }
     }
 
-    private void getColumnValuePair(SQLExpr expr, LineageParseContext context) {
+    private String getTableFullNameFromInputs(String tableName) {
+        return inputTableDbNames.get(tableName) + "." + tableName;
+    }
+
+    private void getColumnValuePair(SQLExpr expr) {
         if (expr instanceof SQLBinaryOpExpr) {
             SQLBinaryOpExpr boExpr = (SQLBinaryOpExpr) expr;
             SQLExpr leftExpr = boExpr.getLeft();
             SQLExpr rightExpr = boExpr.getRight();
 
             if (leftExpr instanceof SQLBinaryOpExpr || leftExpr instanceof SQLInListExpr) {
-                getColumnValuePair(leftExpr, context);
+                getColumnValuePair(leftExpr);
             }
 
             if (rightExpr instanceof SQLBinaryOpExpr || leftExpr instanceof SQLInListExpr) {
-                getColumnValuePair(rightExpr, context);
+                getColumnValuePair(rightExpr);
             }
 
             if (leftExpr instanceof SQLPropertyExpr && rightExpr instanceof SQLCharExpr) {
-                putValues((SQLPropertyExpr) leftExpr, (SQLCharExpr) rightExpr, context);
+                putValues((SQLPropertyExpr) leftExpr, (SQLCharExpr) rightExpr);
             } else if (leftExpr instanceof SQLCharExpr && rightExpr instanceof SQLPropertyExpr) {
-                putValues((SQLPropertyExpr) rightExpr, (SQLCharExpr) leftExpr, context);
+                putValues((SQLPropertyExpr) rightExpr, (SQLCharExpr) leftExpr);
             }
         } else if (expr instanceof SQLInListExpr) {
             Map.Entry<String, List<String>> values = getValues((SQLInListExpr) expr);
@@ -94,38 +116,38 @@ public class LineageParser {
                 values.setValue(otherValues);
             }
 
-            putValues(values, fieldName, context);
+            putValues(values, fieldName);
         }
     }
 
     private String getFieldName(SQLInListExpr expr) {
-        return ((SQLPropertyExpr)expr.getExpr()).getName();
+        return ((SQLPropertyExpr) expr.getExpr()).getName();
     }
 
     private boolean isLineagePartitioned(String tableName) {
-        String tableFullName = getTableFullNameFromInput(tableName);
+        String tableFullName = getTableFullNameFromInputs(tableName);
         return hiveLineageTableInfo.isLineagePartitioned(tableFullName);
     }
 
     private String getLineagePartitionName(String tableName) {
-        String tableFullName = getTableFullNameFromInput(tableName);
+        String tableFullName = getTableFullNameFromInputs(tableName);
         return hiveLineageTableInfo.getLineagePartitionName(tableFullName);
     }
 
     private Map.Entry<String, String> getValue(SQLPropertyExpr property, SQLCharExpr value) {
-        String name = ((SQLIdentifierExpr)(property.getOwner())).getName();
+        String name = ((SQLIdentifierExpr) (property.getOwner())).getName();
         return new KeyValue<>(name, value.getText());
     }
 
     private Map.Entry<String, List<String>> getValues(SQLInListExpr expr) {
         List<String> values = new ArrayList<>();
         Map.Entry<String, List<String>> ret = null;
-        SQLExpr leftExpr =  expr.getExpr();
+        SQLExpr leftExpr = expr.getExpr();
         List<SQLExpr> rightExprs = expr.getTargetList();
 
         Map.Entry<String, String> value = null;
         if (leftExpr instanceof SQLPropertyExpr && rightExprs.get(0) instanceof SQLCharExpr) {
-            for (SQLExpr rightExpr: rightExprs) {
+            for (SQLExpr rightExpr : rightExprs) {
                 value = getValue((SQLPropertyExpr) leftExpr, (SQLCharExpr) rightExpr);
                 values.add(value.getValue());
             }
@@ -138,7 +160,7 @@ public class LineageParser {
 
     private List<String> getOtherValues(String tableName, List<String> values) {
         List<String> ret = null;
-        String tableFullName = getTableFullNameFromInput(tableName);
+        String tableFullName = getTableFullNameFromInputs(tableName);
         if (isLineagePartitioned(tableName)) {
             List<String> lineagePartitionValues =
                     hiveLineageTableInfo.getLineagePartitionValues(tableFullName);
@@ -149,52 +171,74 @@ public class LineageParser {
         return ret;
     }
 
-    private void putValue(Map.Entry<String, String> value, String fieldName, LineageParseContext context) {
-        putValues(value.getKey(), Arrays.asList(value.getValue()), fieldName, context);
+    private void putValue(Map.Entry<String, String> value, String fieldName) {
+        putValues(value.getKey(), Arrays.asList(value.getValue()), fieldName);
     }
 
-    private void putValues(SQLPropertyExpr property, SQLCharExpr value, LineageParseContext context) {
+    private void putValues(SQLPropertyExpr property, SQLCharExpr value) {
         Map.Entry<String, String> entry = getValue(property, value);
         SQLBinaryOpExpr boExpr = (SQLBinaryOpExpr) property.getParent();
         String fieldName = property.getName();
         if (boExpr.getOperator() == SQLBinaryOperator.NotEqual
                 || boExpr.getOperator() == SQLBinaryOperator.LessThanOrGreater) {
             List<String> otherValues = getOtherValues(entry.getKey(), Arrays.asList(entry.getValue()));
-            putValues(new KeyValue<>(entry.getKey(), otherValues), fieldName, context);
+            putValues(new KeyValue<>(entry.getKey(), otherValues), fieldName);
         } else {
-            putValue(entry, fieldName, context);
+            putValue(entry, fieldName);
         }
     }
 
-    private void putValues(Map.Entry<String, List<String>> values, String fieldName, LineageParseContext context) {
-        putValues(values.getKey(), values.getValue(), fieldName, context);
+    private void putValues(Map.Entry<String, List<String>> values, String fieldName) {
+        putValues(values.getKey(), values.getValue(), fieldName);
     }
 
-    private void putValues(String key, List<String> values, String fieldName, LineageParseContext context) {
+    private void putValues(String key, List<String> values, String fieldName) {
         if (isLineagePartitioned(key) && fieldName.equals(getLineagePartitionName(key))) {
-            Map<String, List<String>> lineageMap =  context.getActualLineagePartVals();
-            if (lineageMap.containsKey(key)) {
-                lineageMap.get(key).addAll(values);
+            if (actualLineagePartVals.containsKey(key)) {
+                actualLineagePartVals.get(key).addAll(values);
             } else {
-                lineageMap.put(key, values);
+                actualLineagePartVals.put(key, values);
             }
         }
     }
 
     @Deprecated
-    private void putValue(SQLPropertyExpr property, SQLCharExpr value, LineageParseContext context) {
-        String name = ((SQLIdentifierExpr)(property.getOwner())).getName();
+    private void putValue(SQLPropertyExpr property, SQLCharExpr value) {
+        String name = ((SQLIdentifierExpr) (property.getOwner())).getName();
         String fieldName = property.getName();
         if (isLineagePartitioned(name) && fieldName.equals(getLineagePartitionName(name))) {
-            Map<String, List<String>> lineageMap =  context.getActualLineagePartVals();
-            if (lineageMap.containsKey(name)) {
-                lineageMap.get(name).add(value.getText());
+            if (actualLineagePartVals.containsKey(name)) {
+                actualLineagePartVals.get(name).add(value.getText());
             } else {
                 List<String> values = new ArrayList<>();
                 values.add(value.getText());
-                lineageMap.put(name, values);
+                actualLineagePartVals.put(name, values);
             }
         }
+    }
+
+    public HiveLineageTableInfo getHiveLineageTableInfo() {
+        return hiveLineageTableInfo;
+    }
+
+    public void setHiveLineageTableInfo(HiveLineageTableInfo hiveLineageTableInfo) {
+        this.hiveLineageTableInfo = hiveLineageTableInfo;
+    }
+
+    public Map<String, String> getInputTableDbNames() {
+        return inputTableDbNames;
+    }
+
+    public void setInputTableDbNames(Map<String, String> inputTableDbNames) {
+        this.inputTableDbNames = inputTableDbNames;
+    }
+
+    public Map<String, List<String>> getActualLineagePartVals() {
+        return actualLineagePartVals;
+    }
+
+    public void setActualLineagePartVals(Map<String, List<String>> actualLineagePartVals) {
+        this.actualLineagePartVals = actualLineagePartVals;
     }
 
     private static void druidExample1() {
@@ -207,18 +251,18 @@ public class LineageParser {
 
         List<List<SQLStatement>> stmtLists = new ArrayList<>();
 
-        for (String sql: sqls) {
+        for (String sql : sqls) {
             stmtLists.add(SQLUtils.parseStatements(sql, dbType));
         }
 
-        for (List<SQLStatement> stmtList: stmtLists) {
+        for (List<SQLStatement> stmtList : stmtLists) {
 //            System.out.println(SQLUtils.toSQLString(stmtList, dbType));
 
-            for (SQLStatement stmt: stmtList) {
+            for (SQLStatement stmt : stmtList) {
                 if (stmt instanceof SQLSelectStatement) {
-                    SQLSelectStatement sstmt = (SQLSelectStatement)stmt;
+                    SQLSelectStatement sstmt = (SQLSelectStatement) stmt;
                     SQLSelect sqlSelect = sstmt.getSelect();
-                    SQLSelectQueryBlock query = (SQLSelectQueryBlock)sqlSelect.getQuery();
+                    SQLSelectQueryBlock query = (SQLSelectQueryBlock) sqlSelect.getQuery();
                     StringBuffer where = new StringBuffer();
                     SQLASTOutputVisitor whereVisitor = SQLUtils.createFormatOutputVisitor(where, stmtList, JdbcConstants.HIVE);
 
