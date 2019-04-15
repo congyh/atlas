@@ -27,7 +27,7 @@ public class LineageParser {
         final String dbType = JdbcConstants.HIVE;
         List<SQLExpr> exprs = new ArrayList<>();
         // expect RTB, GDT
-        exprs.add(SQLUtils.toSQLExpr("(dim_test_table_with_pt_level1.pt IN ('RTB', 'GDT') AND 'x' = 'x') OR 'CPS' = dim_a.pt", dbType));
+        exprs.add(SQLUtils.toSQLExpr("(dim_test_table_with_pt_level1.pt IN ('RTB', 'GDT') AND dim_test_table_with_pt_level1.dt = '2019-04-08') OR 'CPS' = dim_a.pt", dbType));
         // expect GDT
         exprs.add(SQLUtils.toSQLExpr("dim_test_table_with_pt_level1.pt not in ('RTB', 'CPS')"));
         // expect GDT, CPS
@@ -87,19 +87,29 @@ public class LineageParser {
             }
         } else if (expr instanceof SQLInListExpr) {
             Map.Entry<String, List<String>> values = getValues((SQLInListExpr) expr);
+            String fieldName = getFieldName((SQLInListExpr) expr);
 
             if (((SQLInListExpr) expr).isNot()) {
                 List<String> otherValues = getOtherValues(values.getKey(), values.getValue());
                 values.setValue(otherValues);
             }
 
-            putValues(values, context);
+            putValues(values, fieldName, context);
         }
+    }
+
+    private String getFieldName(SQLInListExpr expr) {
+        return ((SQLPropertyExpr)expr.getExpr()).getName();
     }
 
     private boolean isLineagePartitioned(String tableName) {
         String tableFullName = getTableFullNameFromInput(tableName);
         return hiveLineageTableInfo.isLineagePartitioned(tableFullName);
+    }
+
+    private String getLineagePartitionName(String tableName) {
+        String tableFullName = getTableFullNameFromInput(tableName);
+        return hiveLineageTableInfo.getLineagePartitionName(tableFullName);
     }
 
     private Map.Entry<String, String> getValue(SQLPropertyExpr property, SQLCharExpr value) {
@@ -139,9 +149,43 @@ public class LineageParser {
         return ret;
     }
 
+    private void putValue(Map.Entry<String, String> value, String fieldName, LineageParseContext context) {
+        putValues(value.getKey(), Arrays.asList(value.getValue()), fieldName, context);
+    }
+
+    private void putValues(SQLPropertyExpr property, SQLCharExpr value, LineageParseContext context) {
+        Map.Entry<String, String> entry = getValue(property, value);
+        SQLBinaryOpExpr boExpr = (SQLBinaryOpExpr) property.getParent();
+        String fieldName = property.getName();
+        if (boExpr.getOperator() == SQLBinaryOperator.NotEqual
+                || boExpr.getOperator() == SQLBinaryOperator.LessThanOrGreater) {
+            List<String> otherValues = getOtherValues(entry.getKey(), Arrays.asList(entry.getValue()));
+            putValues(new KeyValue<>(entry.getKey(), otherValues), fieldName, context);
+        } else {
+            putValue(entry, fieldName, context);
+        }
+    }
+
+    private void putValues(Map.Entry<String, List<String>> values, String fieldName, LineageParseContext context) {
+        putValues(values.getKey(), values.getValue(), fieldName, context);
+    }
+
+    private void putValues(String key, List<String> values, String fieldName, LineageParseContext context) {
+        if (isLineagePartitioned(key) && fieldName.equals(getLineagePartitionName(key))) {
+            Map<String, List<String>> lineageMap =  context.getActualLineagePartVals();
+            if (lineageMap.containsKey(key)) {
+                lineageMap.get(key).addAll(values);
+            } else {
+                lineageMap.put(key, values);
+            }
+        }
+    }
+
+    @Deprecated
     private void putValue(SQLPropertyExpr property, SQLCharExpr value, LineageParseContext context) {
         String name = ((SQLIdentifierExpr)(property.getOwner())).getName();
-        if (isLineagePartitioned(name)) {
+        String fieldName = property.getName();
+        if (isLineagePartitioned(name) && fieldName.equals(getLineagePartitionName(name))) {
             Map<String, List<String>> lineageMap =  context.getActualLineagePartVals();
             if (lineageMap.containsKey(name)) {
                 lineageMap.get(name).add(value.getText());
@@ -149,37 +193,6 @@ public class LineageParser {
                 List<String> values = new ArrayList<>();
                 values.add(value.getText());
                 lineageMap.put(name, values);
-            }
-        }
-    }
-
-    private void putValue(Map.Entry<String, String> value, LineageParseContext context) {
-        putValues(value.getKey(), Arrays.asList(value.getValue()), context);
-    }
-
-    private void putValues(SQLPropertyExpr property, SQLCharExpr value, LineageParseContext context) {
-        Map.Entry<String, String> entry = getValue(property, value);
-        SQLBinaryOpExpr boExpr = (SQLBinaryOpExpr) property.getParent();
-        if (boExpr.getOperator() == SQLBinaryOperator.NotEqual
-                || boExpr.getOperator() == SQLBinaryOperator.LessThanOrGreater) {
-            List<String> otherValues = getOtherValues(entry.getKey(), Arrays.asList(entry.getValue()));
-            putValues(new KeyValue<>(entry.getKey(), otherValues), context);
-        } else {
-            putValue(entry, context);
-        }
-    }
-
-    private void putValues(Map.Entry<String, List<String>> values, LineageParseContext context) {
-        putValues(values.getKey(), values.getValue(), context);
-    }
-
-    private void putValues(String key, List<String> values, LineageParseContext context) {
-        if (isLineagePartitioned(key)) {
-            Map<String, List<String>> lineageMap =  context.getActualLineagePartVals();
-            if (lineageMap.containsKey(key)) {
-                lineageMap.get(key).addAll(values);
-            } else {
-                lineageMap.put(key, values);
             }
         }
     }
