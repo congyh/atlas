@@ -22,7 +22,7 @@ public class LineageParser {
 
     private Map<String, String> inputTableDbNames= new HashMap<>();
 
-    private Map<String, List<String>> actualLineagePartVals = new HashMap<>();
+    private Map<String, Set<String>> actualLineagePartVals = new HashMap<>();
 
     private Set<ReadEntity> inputs;
 
@@ -34,7 +34,7 @@ public class LineageParser {
     public LineageParser(HiveLineageTableInfo hiveLineageTableInfo,
                          Set<ReadEntity> inputs,
                          Map<String, String> inputTableDbNames,
-                         Map<String, List<String>> actualLineagePartVals) {
+                         Map<String, Set<String>> actualLineagePartVals) {
         this.hiveLineageTableInfo = hiveLineageTableInfo;
         this.inputs = inputs;
         this.inputTableDbNames = inputTableDbNames;
@@ -197,7 +197,7 @@ public class LineageParser {
             if (actualLineagePartVals.containsKey(key)) {
                 actualLineagePartVals.get(key).addAll(values);
             } else {
-                actualLineagePartVals.put(key, values);
+                actualLineagePartVals.put(key, new HashSet<>(values));
             }
         }
     }
@@ -210,7 +210,7 @@ public class LineageParser {
             if (actualLineagePartVals.containsKey(name)) {
                 actualLineagePartVals.get(name).add(value.getText());
             } else {
-                List<String> values = new ArrayList<>();
+                Set<String> values = new HashSet<>();
                 values.add(value.getText());
                 actualLineagePartVals.put(name, values);
             }
@@ -233,11 +233,11 @@ public class LineageParser {
         this.inputTableDbNames = inputTableDbNames;
     }
 
-    public Map<String, List<String>> getActualLineagePartVals() {
+    public Map<String, Set<String>> getActualLineagePartVals() {
         return actualLineagePartVals;
     }
 
-    public void setActualLineagePartVals(Map<String, List<String>> actualLineagePartVals) {
+    public void setActualLineagePartVals(Map<String, Set<String>> actualLineagePartVals) {
         this.actualLineagePartVals = actualLineagePartVals;
     }
 
