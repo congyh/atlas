@@ -222,7 +222,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     @Override
     @GraphTransaction
     public EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate) throws AtlasBaseException {
-        return createOrUpdate(entityStream, isPartialUpdate, false);
+        return createOrUpdate(entityStream, isPartialUpdate, false); // 默认不进行classification替换
     }
 
     @Override
@@ -660,7 +660,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             }
 
             // for existing entities, skip update if incoming entity doesn't have any change
-            if (CollectionUtils.isNotEmpty(context.getUpdatedEntities())) {
+            if (CollectionUtils.isNotEmpty(context.getUpdatedEntities())) { // 只取更新了的entity
                 List<AtlasEntity> entitiesToSkipUpdate = null;
 
                 for (AtlasEntity entity : context.getUpdatedEntities()) {

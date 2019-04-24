@@ -125,7 +125,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
                 case ALTERVIEW_PROPERTIES:
                 case ALTERTABLE_SERDEPROPERTIES:
                 case ALTERTABLE_SERIALIZER:
-                case ALTERTABLE_ADDCOLS:
+                case ALTERTABLE_ADDCOLS: // hive event: 增加列
                 case ALTERTABLE_REPLACECOLS:
                 case ALTERTABLE_PARTCOLTYPE:
                 case ALTERTABLE_LOCATION:

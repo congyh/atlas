@@ -469,7 +469,7 @@ public abstract class BaseHiveEvent {
         return ret;
     }
 
-    protected List<AtlasEntity> getColumnEntities(AtlasObjectId tableId, Table table, List<FieldSchema> fieldSchemas) {
+    protected List<AtlasEntity> getColumnEntities(AtlasObjectId tableId, Table table, List<FieldSchema> fieldSchemas) { // 创建表, 修改表(添加列), 最终都会走到这里来
         List<AtlasEntity> ret          = new ArrayList<>();
         boolean           isKnownTable = tableId.getGuid() == null;
 
@@ -819,7 +819,6 @@ public abstract class BaseHiveEvent {
                     colName = fieldSchema.getName();
                     colNames.add(colName);
                 } else {
-                    // TODO: 当前在输入分区没有值的情况下, lineagePartitionValues为空. 需要升级
                     for (String lineagePartitionValue: lineagePartitionValues) {
                         colName = getRewrittenColumnName(
                                 fieldSchema.getName(), lineagePartitionName, lineagePartitionValue);

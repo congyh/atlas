@@ -33,7 +33,6 @@ import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 
 import java.util.*;
 
-// TODO: 需要通过一个实际的sql运行来看实际的where情况有多么复杂.
 public class LineageParser {
 
     private HiveLineageTableInfo hiveLineageTableInfo;
@@ -275,7 +274,7 @@ public class LineageParser {
 
         HiveLineageTableInfo lineageTableInfo = new HiveLineageTableInfo();
 
-        // TODO: fake first
+        // fake
         Set<ReadEntity> inputs = new HashSet<>();
         Map<String, String> inputTableDbNames = new HashMap<>();
         inputTableDbNames.put("dim_test_table_with_pt_level1", "dim");
