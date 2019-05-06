@@ -219,6 +219,7 @@ public class EntityGraphMapper {
         Collection<AtlasEntity> updatedEntities = context.getUpdatedEntities();
 
         if (CollectionUtils.isNotEmpty(createdEntities)) {
+            boolean isCreateTable = isCreateTableAction(createdEntities);
             for (AtlasEntity createdEntity : createdEntities) {
                 String          guid       = createdEntity.getGuid();
                 AtlasVertex     vertex     = context.getVertex(guid);
@@ -229,6 +230,11 @@ public class EntityGraphMapper {
                 mapAttributes(createdEntity, entityType, vertex, CREATE, context);
 
                 resp.addEntity(CREATE, constructHeader(createdEntity, entityType, vertex));
+
+                // 不是建表动作, 且被创建的entity是hive_column类型时. 为新增列添加上线时间.
+                if (!isCreateTable && createdEntity.getTypeName().equals("hive_column")) {
+                    addOnlineDateClassificationForEntity(createdEntity);
+                }
                 addClassifications(context, guid, createdEntity.getClassifications());
             }
         }
@@ -278,6 +284,33 @@ public class EntityGraphMapper {
         RequestContext.get().endMetricRecord(metric);
 
         return resp;
+    }
+
+    private boolean isCreateTableAction(Collection<AtlasEntity> createdEntities) {
+        for (AtlasEntity createdEntity: createdEntities) {
+            if (createdEntity.getTypeName().equals("hive_table")) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void addOnlineDateClassificationForEntity(AtlasEntity entity) {
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put("online_date", System.currentTimeMillis());
+
+        AtlasClassification classification = new AtlasClassification("OnlineDate", attributes);
+        classification.setEntityGuid(entity.getGuid());
+        classification.setEntityStatus(ACTIVE);
+        classification.setPropagate(true);
+        classification.setValidityPeriods(new ArrayList<>());
+        classification.setRemovePropagationsOnEntityDelete(false);
+
+        if (entity.getClassifications() == null) {
+            entity.setClassifications(new ArrayList<>());
+        }
+        entity.getClassifications().add(classification);
     }
 
     private AtlasVertex createStructVertex(AtlasStruct struct) {
