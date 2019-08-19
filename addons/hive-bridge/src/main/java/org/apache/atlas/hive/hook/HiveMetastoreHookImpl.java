@@ -39,13 +39,13 @@ import static org.apache.hadoop.hive.ql.plan.HiveOperation.*;
 
 public class HiveMetastoreHookImpl extends MetaStoreEventListener {
     private static final Logger            LOG = LoggerFactory.getLogger(HiveMetastoreHookImpl.class);
-    private        final HiveHookImpl hiveHook;
+    private        final HiveHook          hiveHook;
     private        final HiveMetastoreHook hook;
 
     public HiveMetastoreHookImpl(Configuration config) {
         super(config);
 
-        this.hiveHook = new HiveHookImpl();
+        this.hiveHook = new HiveHook();
         this.hook     = new HiveMetastoreHook();
     }
 

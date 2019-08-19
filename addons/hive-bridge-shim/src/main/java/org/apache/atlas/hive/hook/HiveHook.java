@@ -32,7 +32,7 @@ public class HiveHook implements ExecuteWithHookContext {
     private static final Logger LOG = LoggerFactory.getLogger(HiveHook.class);
 
     private static final String ATLAS_PLUGIN_TYPE = "hive";
-    private static final String ATLAS_HIVE_HOOK_IMPL_CLASSNAME = "org.apache.atlas.hive.hook.HiveHookImpl";
+    private static final String ATLAS_HIVE_HOOK_IMPL_CLASSNAME = "org.apache.atlas.hive.hook.HiveHook";
 
     private AtlasPluginClassLoader atlasPluginClassLoader = null;
     private ExecuteWithHookContext hiveHookImpl = null;

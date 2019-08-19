@@ -18,7 +18,7 @@
 <configuration>
     <property>
         <name>hive.exec.post.hooks</name>
-        <value>org.apache.atlas.hive.hook.HiveHookImpl</value>
+        <value>org.apache.atlas.hive.hook.HiveHook</value>
     </property>
 
     <property>
