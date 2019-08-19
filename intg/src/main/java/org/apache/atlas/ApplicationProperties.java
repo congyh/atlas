@@ -23,13 +23,11 @@ import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.fs.FileSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URL;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Iterator;
@@ -43,6 +41,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     private static final Logger LOG = LoggerFactory.getLogger(ApplicationProperties.class);
 
     public static final String  APPLICATION_PROPERTIES     = "atlas-application.properties";
+    public static final String  HDFS_APPLICATION_FILE_PATH      = "/user/jd_ad/ads_app/data_lineage/atlas-application.properties";
 
     public static final String  GRAPHDB_BACKEND_CONF       = "atlas.graphdb.backend";
     public static final String  STORAGE_BACKEND_CONF       = "atlas.graph.storage.backend";
@@ -110,10 +109,17 @@ public final class ApplicationProperties extends PropertiesConfiguration {
         }
     }
 
+    private static void downloadConfigFromRemote() throws IOException {
+        FileSystem fs = HdfsUtils.getDefaultFS(HDFS_APPLICATION_FILE_PATH);
+        HdfsUtils.downloadFile(fs, HDFS_APPLICATION_FILE_PATH);
+    }
+
     public static Configuration get(String fileName) throws AtlasException {
         String confLocation = System.getProperty(ATLAS_CONFIGURATION_DIRECTORY_PROPERTY);
         try {
             URL url = null;
+
+            downloadConfigFromRemote();
 
             if (confLocation == null) {
                 LOG.info("Looking for {} in classpath", fileName);
