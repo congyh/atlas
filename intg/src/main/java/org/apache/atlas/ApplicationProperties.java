@@ -105,6 +105,15 @@ public final class ApplicationProperties extends PropertiesConfiguration {
         HdfsUtils.downloadFile(fs, HDFS_APPLICATION_FILE_PATH);
     }
 
+    public static void printConfiguration(Configuration configuration) {
+        Iterator<String> keys = configuration.getKeys();
+        System.out.println("Configuration loaded:");
+        while (keys.hasNext()) {
+            String key = keys.next();
+            System.out.println(key + " = " + configuration.getProperty(key));
+        }
+    }
+
     public static Configuration get(String fileName) throws AtlasException {
         String confLocation = System.getProperty(ATLAS_CONFIGURATION_DIRECTORY_PROPERTY);
         try {
@@ -135,6 +144,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
             Configuration configuration = appProperties.interpolatedConfiguration();
 
             logConfiguration(configuration);
+            printConfiguration(configuration);
             return configuration;
         } catch (Exception e) {
             throw new AtlasException("Failed to load application properties", e);
