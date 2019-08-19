@@ -20,8 +20,8 @@ package org.apache.atlas.hive.hook;
 
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.hive.hook.HiveMetastoreHookImpl.HiveMetastoreHook;
-import org.apache.atlas.hive.hook.HiveHook.PreprocessAction;
-import org.apache.atlas.hive.hook.HiveHook.HiveHookObjectNamesCache;
+import org.apache.atlas.hive.hook.HiveHookImpl.PreprocessAction;
+import org.apache.atlas.hive.hook.HiveHookImpl.HiveHookObjectNamesCache;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.hadoop.hive.metastore.IHMSHandler;
 import org.apache.hadoop.hive.metastore.api.Database;
@@ -45,7 +45,7 @@ public class AtlasHiveHookContext {
     public static final String CREATE_OPERATION       = "CREATE";
     public static final String ALTER_OPERATION        = "ALTER";
 
-    private final HiveHook                 hook;
+    private final HiveHookImpl hook;
     private final HiveOperation            hiveOperation;
     private final HookContext              hiveContext;
     private final Hive                     hive;
@@ -58,17 +58,17 @@ public class AtlasHiveHookContext {
     private boolean isSkippedInputEntity;
     private boolean isSkippedOutputEntity;
 
-    public AtlasHiveHookContext(HiveHook hook, HiveOperation hiveOperation, HookContext hiveContext,
+    public AtlasHiveHookContext(HiveHookImpl hook, HiveOperation hiveOperation, HookContext hiveContext,
                                 HiveHookObjectNamesCache knownObjects) throws Exception {
         this(hook, hiveOperation, hiveContext, knownObjects, null, null);
     }
 
-    public AtlasHiveHookContext(HiveHook hook, HiveOperation hiveOperation, HiveHookObjectNamesCache knownObjects,
+    public AtlasHiveHookContext(HiveHookImpl hook, HiveOperation hiveOperation, HiveHookObjectNamesCache knownObjects,
                                 HiveMetastoreHook metastoreHook, ListenerEvent listenerEvent) throws Exception {
         this(hook, hiveOperation, null, knownObjects, metastoreHook, listenerEvent);
     }
 
-    public AtlasHiveHookContext(HiveHook hook, HiveOperation hiveOperation, HookContext hiveContext, HiveHookObjectNamesCache knownObjects,
+    public AtlasHiveHookContext(HiveHookImpl hook, HiveOperation hiveOperation, HookContext hiveContext, HiveHookObjectNamesCache knownObjects,
                                 HiveMetastoreHook metastoreHook, ListenerEvent listenerEvent) throws Exception {
         this.hook             = hook;
         this.hiveOperation    = hiveOperation;

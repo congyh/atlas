@@ -48,8 +48,8 @@ import static org.apache.atlas.hive.hook.events.BaseHiveEvent.HIVE_TYPE_DB;
 import static org.apache.atlas.hive.hook.events.BaseHiveEvent.HIVE_TYPE_TABLE;
 
 
-public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
-    private static final Logger LOG = LoggerFactory.getLogger(HiveHook.class);
+public class HiveHookImpl extends AtlasHook implements ExecuteWithHookContext {
+    private static final Logger LOG = LoggerFactory.getLogger(HiveHookImpl.class);
 
     public enum PreprocessAction { NONE, IGNORE, PRUNE }
 
@@ -151,7 +151,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
     }
 
 
-    public HiveHook() {
+    public HiveHookImpl() {
     }
 
     @Override
@@ -312,7 +312,7 @@ public class HiveHook extends AtlasHook implements ExecuteWithHookContext {
         if (knownObjects != null && knownObjects.isCacheExpired()) {
             LOG.info("HiveHook.run(): purging cached databaseNames ({}) and tableNames ({})", knownObjects.getCachedDbCount(), knownObjects.getCachedTableCount());
 
-            knownObjects = new HiveHook.HiveHookObjectNamesCache(nameCacheDatabaseMaxCount, nameCacheTableMaxCount, nameCacheRebuildIntervalSeconds);
+            knownObjects = new HiveHookImpl.HiveHookObjectNamesCache(nameCacheDatabaseMaxCount, nameCacheTableMaxCount, nameCacheRebuildIntervalSeconds);
         }
 
         return knownObjects;
