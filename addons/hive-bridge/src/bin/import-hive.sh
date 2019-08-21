@@ -15,6 +15,30 @@
 # resolve links - $0 may be a softlink
 PRG="${0}"
 
+##### Steps before using import-hive.sh #####
+# 1. Create a soft link to import-hive.sh in ~/bin.
+#
+#   ln -s <hive_hook>/hook-bin/import-hive.sh ~/bin/import-hive
+# 2. Add missing jar to <hive_hook>/hook/hive/atlas-hive-plugin-impl:
+#
+#   hadoop-client-2.7.1.jar
+#   hadoop-common-2.7.1.jar
+#   hadoop-hdfs-2.7.1.jar
+#   hadoop-mapreduce-client-core-2.7.1.jar
+#   jackson-jaxrs-base-2.9.8.jar
+#   jackson-jaxrs-json-provider-2.9.8.jar
+#   jackson-module-jaxb-annotations-2.9.8.jar
+#   jersey-client-1.19.jar
+# 3. Change pwd to ~/bin, where we put atlas-application.properties here (See below in script.)
+# 4. Use import-hive tool like this:
+#
+#   import-hive -t dim.dim_szad_material_mapping
+################################################
+
+export JAVA_HOME=/software/servers/jdk1.8.0_121
+# Change pwd to ~/bin, where we put atlas-application.properties here.
+cd ~/bin
+
 [[ `uname -s` == *"CYGWIN"* ]] && CYGWIN=true
 
 while [ -h "${PRG}" ]; do
