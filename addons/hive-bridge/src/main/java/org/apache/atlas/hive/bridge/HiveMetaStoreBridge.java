@@ -104,6 +104,7 @@ public class HiveMetaStoreBridge {
     public static void main(String[] args) {
         int exitCode = EXIT_CODE_FAILED;
         AtlasClientV2 atlasClientV2 = null;
+        System.out.println("Enter HiveMetaStoreBridge...");
 
         try {
             Options options = new Options();
@@ -112,14 +113,19 @@ public class HiveMetaStoreBridge {
             options.addOption("f", "filename", true, "Filename");
             options.addOption("failOnError", false, "failOnError");
 
+            System.out.println("Preparing parse options...");
             CommandLine   cmd              = new BasicParser().parse(options, args);
+            System.out.println("End parse options...");
             boolean       failOnError      = cmd.hasOption("failOnError");
             String        databaseToImport = cmd.getOptionValue("d");
             String        tableToImport    = cmd.getOptionValue("t");
             String        fileToImport     = cmd.getOptionValue("f");
+            System.out.println("Preparing get configuration...");
             Configuration atlasConf        = ApplicationProperties.get();
+            System.out.println("End getting configuration...");
             String[]      atlasEndpoint    = atlasConf.getStringArray(ATLAS_ENDPOINT);
 
+            System.out.println("Atlas Endpoint: " + atlasEndpoint[0]);
             if (atlasEndpoint == null || atlasEndpoint.length == 0) {
                 atlasEndpoint = new String[] { DEFAULT_ATLAS_URL };
             }
@@ -135,7 +141,9 @@ public class HiveMetaStoreBridge {
                 atlasClientV2 = new AtlasClientV2(ugi, ugi.getShortUserName(), atlasEndpoint);
             }
 
+            System.out.println("Preparing create metastore bridge...");
             HiveMetaStoreBridge hiveMetaStoreBridge = new HiveMetaStoreBridge(atlasConf, new HiveConf(), atlasClientV2);
+            System.out.println("End creating metastore bridge...");
 
             if (StringUtils.isNotEmpty(fileToImport)) {
                 File f = new File(fileToImport);
@@ -165,7 +173,9 @@ public class HiveMetaStoreBridge {
                     LOG.error("Failed to read the input file: " + fileToImport);
                 }
             } else {
+                System.out.println("Preparing import metastore data...");
                 hiveMetaStoreBridge.importHiveMetadata(databaseToImport, tableToImport, failOnError);
+                System.out.println("End importing metastore data...");
             }
 
             exitCode = EXIT_CODE_SUCCESS;

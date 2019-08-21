@@ -147,6 +147,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
             printConfiguration(configuration);
             return configuration;
         } catch (Exception e) {
+            System.out.println(e.getMessage());
             throw new AtlasException("Failed to load application properties", e);
         }
     }
