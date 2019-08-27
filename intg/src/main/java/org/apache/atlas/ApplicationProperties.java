@@ -41,7 +41,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     private static final Logger LOG = LoggerFactory.getLogger(ApplicationProperties.class);
 
     public static final String  APPLICATION_PROPERTIES     = "atlas-application.properties";
-    public static final String  HDFS_APPLICATION_FILE_PATH      = "/user/jd_ad/ads_app/data_lineage/atlas-application.properties";
+    public static final String  HDFS_APPLICATION_FILE_PATH      = "hdfs://ns1018/user/jd_ad/ads_app/data_lineage/atlas-application.properties";
 
     public static final String  GRAPHDB_BACKEND_CONF       = "atlas.graphdb.backend";
     public static final String  STORAGE_BACKEND_CONF       = "atlas.graph.storage.backend";
