@@ -56,6 +56,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
     public    static final String ATLAS_HOOK_TOPIC           = AtlasConfiguration.NOTIFICATION_HOOK_TOPIC_NAME.getString();
     public    static final String ATLAS_ENTITIES_TOPIC       = AtlasConfiguration.NOTIFICATION_ENTITIES_TOPIC_NAME.getString();
     protected static final String CONSUMER_GROUP_ID_PROPERTY = "group.id";
+    protected static final String CONSUMER_CLIENT_ID_PROPERTY = "client.id";
 
     private static final String DEFAULT_CONSUMER_CLOSED_ERROR_MESSAGE = "This consumer has already been closed.";
 
@@ -255,6 +256,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
     Properties getConsumerProperties(NotificationType type) {
         // find the configured group id for the given notification type
         String groupId = properties.getProperty(type.toString().toLowerCase() + "." + CONSUMER_GROUP_ID_PROPERTY);
+        String consumerId = properties.getProperty(type.toString().toLowerCase() + "." + CONSUMER_CLIENT_ID_PROPERTY);
 
         if (StringUtils.isEmpty(groupId)) {
             throw new IllegalStateException("No configuration group id set for the notification type " + type);
@@ -263,6 +265,8 @@ public class KafkaNotification extends AbstractNotification implements Service {
         Properties consumerProperties = new Properties();
 
         consumerProperties.putAll(properties);
+        // Update client.id for KafkaConsumer
+        consumerProperties.put(ConsumerConfig.CLIENT_ID_CONFIG, consumerId);
         consumerProperties.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
 
         return consumerProperties;
