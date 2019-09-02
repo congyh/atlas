@@ -17,7 +17,17 @@
 # limitations under the License.
 import os
 import sys
-sys.path.insert(0, '/usr/hdp/current/atlas-server/bin/')
+
+# Put this file in path: <atlas_server_package>/tools/
+# Modify path to refer to path in  <atlas_server_package>/bin/
+# Package atlas-index-repair-tool jar in <atlas-source>/tools/atlas-index-repair
+#   mvn clean -DskipTests package
+# Copy atlas-index-repair-tool.jar to <atlas_server_package>/server/webapp/atlas/WEB-INF/lib/
+# Execute a full repair:
+#    ./repair_index.py
+
+
+sys.path.insert(0, '/export/apache-atlas-2.0.0/bin/')
 
 import traceback
 import subprocess
@@ -78,6 +88,7 @@ def main():
                        + os.path.join(web_app_dir, "atlas", "WEB-INF", "classes" ) + p \
                        + os.path.join(web_app_dir, "atlas", "WEB-INF", "lib", "*" )  + p \
                        + os.path.join(atlas_home, "libext", "*")
+    print("atlas_classpath:", atlas_classpath)
 
     is_hbase = mc.is_hbase(confdir)
 
