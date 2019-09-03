@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Iterator;
 import java.util.Properties;
@@ -115,40 +116,69 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     }
 
     public static Configuration get(String fileName) throws AtlasException {
-        String confLocation = System.getProperty(ATLAS_CONFIGURATION_DIRECTORY_PROPERTY);
         try {
-            URL url = null;
+            return getInternal(fileName);
+        } catch (Exception e) {
+            return getFromRemote(fileName);
+        }
+    }
 
-            downloadConfigFromRemote();
+    private static Configuration getInternal(String fileName) throws Exception {
+        URL url = getUrlFromFileName(fileName);
 
-            if (confLocation == null) {
-                LOG.info("Looking for {} in classpath", fileName);
+        LOG.info("Loading {} from {}", fileName, url);
 
-                url = ApplicationProperties.class.getClassLoader().getResource(fileName);
+        ApplicationProperties appProperties = new ApplicationProperties(url);
 
-                if (url == null) {
-                    LOG.info("Looking for /{} in classpath", fileName);
+        appProperties.setDefaults();
 
-                    url = ApplicationProperties.class.getClassLoader().getResource("/" + fileName);
-                }
-            } else {
-                url = new File(confLocation, fileName).toURI().toURL();
+        Configuration configuration = appProperties.interpolatedConfiguration();
+
+        logConfiguration(configuration);
+        printConfiguration(configuration);
+        return configuration;
+    }
+
+    private static URL getUrlFromFileName(String fileName) throws Exception {
+        String confLocation = System.getProperty(ATLAS_CONFIGURATION_DIRECTORY_PROPERTY);
+        URL url = null;
+
+        if (confLocation == null) {
+            LOG.info("Looking for {} in classpath", fileName);
+
+            url = ApplicationProperties.class.getClassLoader().getResource(fileName);
+
+            if (url == null) {
+                LOG.info("Looking for /{} in classpath", fileName);
+
+                url = ApplicationProperties.class.getClassLoader().getResource("/" + fileName);
             }
+        } else {
+            url = new File(confLocation, fileName).toURI().toURL();
+        }
 
-            LOG.info("Loading {} from {}", fileName, url);
+        return url;
+    }
 
-            ApplicationProperties appProperties = new ApplicationProperties(url);
+    private static void deleteFile(String fileName) throws Exception {
+        URL url = getUrlFromFileName(fileName);
+        File file = Paths.get(url.toURI()).toFile();
+        file.delete();
+    }
 
-            appProperties.setDefaults();
-
-            Configuration configuration = appProperties.interpolatedConfiguration();
-
-            logConfiguration(configuration);
-            printConfiguration(configuration);
-            return configuration;
+    private static Configuration getFromRemote(String fileName) throws AtlasException {
+        try {
+            downloadConfigFromRemote();
+            return getInternal(fileName);
         } catch (Exception e) {
             System.out.println(e.getMessage());
             throw new AtlasException("Failed to load application properties", e);
+        } finally {
+            try {
+                deleteFile(fileName);
+            } catch (Exception e) {
+                System.out.println("Failed on delete config file: " + fileName);
+            }
         }
     }
 
