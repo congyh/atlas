@@ -116,7 +116,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             "and configure new compression algorithms on the HBase cluster by itself.",
             ConfigOption.Type.MASKABLE, "GZ");
 
-    public static final ConfigOption<Boolean> SKIP_SCHEMA_CHECK =
+    public static final ConfigOption<Boolean> SKIP_SCHEMA_CHECK = // Note: This configuration is
             new ConfigOption<>(HBASE_NS, "skip-schema-check",
             "Assume that JanusGraph's HBase table and column families already exist. " +
             "When this is true, JanusGraph will not check for the existence of its table/CFs, " +
@@ -227,7 +227,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     public static final TimestampProviders PREFERRED_TIMESTAMPS = TimestampProviders.MILLI;
 
-    public static final ConfigNamespace HBASE_CONFIGURATION_NAMESPACE =
+    public static final ConfigNamespace HBASE_CONFIGURATION_NAMESPACE = // Note: Loading user-defined hbase config.
             new ConfigNamespace(HBASE_NS, "ext", "Overrides for hbase-{site,default}.xml options", true);
 
     private static final StaticBuffer FOUR_ZERO_BYTES = BufferUtil.zeroBuffer(4);
@@ -238,7 +238,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     private final String compression;
     private final int regionCount;
     private final int regionsPerServer;
-    private final ConnectionMask cnx;
+    private final ConnectionMask cnx; // Note: This is a wrapped hbase connect, to avoid breaking hbase connection api changes.
     private final org.apache.hadoop.conf.Configuration hconf;
     private final boolean shortCfNames;
     private final boolean skipSchemaCheck;
@@ -299,7 +299,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
         // Special case for STORAGE_HOSTS
         if (config.has(GraphDatabaseConfiguration.STORAGE_HOSTS)) {
-            String zkQuorumKey = "hbase.zookeeper.quorum";
+            String zkQuorumKey = "hbase.zookeeper.quorum"; // Note: This is where zookeeper config shows up
             String csHostList = Joiner.on(",").join(config.get(GraphDatabaseConfiguration.STORAGE_HOSTS));
             hconf.set(zkQuorumKey, csHostList);
             logger.info("Copied host list from {} to {}: {}", GraphDatabaseConfiguration.STORAGE_HOSTS, zkQuorumKey, csHostList);
@@ -311,7 +311,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
         try {
             //this.cnx = HConnectionManager.createConnection(hconf);
-            this.cnx = compat.createConnection(hconf);
+            this.cnx = compat.createConnection(hconf); // Note: In compat, finally use the origin `ConnectionFactory.createConnection(conf)` to create a connection
         } catch (IOException e) {
             throw new PermanentBackendException(e);
         }
@@ -459,7 +459,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             store = openStores.putIfAbsent(longName, newStore); // nothing bad happens if we loose to other thread
 
             if (store == null) {
-                if (!skipSchemaCheck) {
+                if (!skipSchemaCheck) { // Note: Set this to true to avoid admin related operation
                     int cfTTLInSeconds = -1;
                     if (metaData.contains(StoreMetaData.TTL)) {
                         cfTTLInSeconds = metaData.get(StoreMetaData.TTL);
@@ -490,7 +490,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      */
     @Override
     public void clearStorage() throws BackendException {
-        try (AdminMask adm = getAdminInterface()) {
+        try (AdminMask adm = getAdminInterface()) { // Note: TODO: Refine to do no op.
             if (this.storageConfig.get(DROP_ON_CLEAR)) {
                 adm.dropTable(tableName);
             } else {
@@ -505,7 +505,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     @Override
     public boolean exists() throws BackendException {
         try (final AdminMask adm = getAdminInterface()) {
-            return adm.tableExists(tableName);
+            return adm.tableExists(tableName); // Note: TODO: Refine to always return true.
         } catch (IOException e) {
             throw new TemporaryBackendException(e);
         }
@@ -515,7 +515,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     public List<KeyRange> getLocalKeyPartition() throws BackendException {
         List<KeyRange> result = new LinkedList<>();
         try {
-            ensureTableExists(
+            ensureTableExists( // Note: TODO: need to comment the following line
                 tableName, getCfNameForStoreName(GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME), 0);
             Map<KeyRange, ServerName> normed = normalizeKeyBounds(cnx.getRegionLocations(tableName));
 
@@ -799,7 +799,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         AdminMask adm = null;
         try {
             adm = getAdminInterface();
-            TableDescriptor desc = ensureTableExists(tableName, columnFamily, ttlInSeconds);
+            TableDescriptor desc = ensureTableExists(tableName, columnFamily, ttlInSeconds); // Note: TODO: Set skip-schema-check to true so this method will never be called.
 
             Preconditions.checkNotNull(desc);
 
@@ -969,7 +969,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         }
     }
 
-    private AdminMask getAdminInterface() {
+    private AdminMask getAdminInterface() { // Note: This method is the only way to access hbase admin operation. So find all calling places, we will prohibit admin operation completely.
         try {
             return cnx.getAdmin();
         } catch (IOException e) {

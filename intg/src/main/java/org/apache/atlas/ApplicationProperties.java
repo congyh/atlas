@@ -44,7 +44,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
 
     public static final String  APPLICATION_PROPERTIES     = "atlas-application.properties";
 
-    public static final String  GRAPHDB_BACKEND_CONF       = "atlas.graphdb.backend";
+    public static final String  GRAPHDB_BACKEND_CONF       = "atlas.graphdb.backend"; // Note: Notice the difference between the following two config. graphdb.backend is the tool or api used to write to all kinds of graphdb, like janus, graph.storage.backend is the actual db type, like hbase etc.
     public static final String  STORAGE_BACKEND_CONF       = "atlas.graph.storage.backend";
     public static final String  INDEX_BACKEND_CONF         = "atlas.graph.index.search.backend";
     public static final String  INDEX_MAP_NAME_CONF        = "atlas.graph.index.search.map-name";
@@ -276,10 +276,10 @@ public final class ApplicationProperties extends PropertiesConfiguration {
         String storageBackend = getString(STORAGE_BACKEND_CONF);
 
         if (StringUtils.isEmpty(storageBackend) || storageBackend.equalsIgnoreCase(STORAGE_BACKEND_HBASE)) {
-            storageBackend = STORAGE_BACKEND_HBASE2;
+            storageBackend = STORAGE_BACKEND_HBASE2; // Note: In atlas 2.0, we use hbase 2.0 api as default hbase api.
         }
 
-        clearPropertyDirect(STORAGE_BACKEND_CONF);
+        clearPropertyDirect(STORAGE_BACKEND_CONF); // Note: Use hbase2 as storage backend.
         addPropertyDirect(STORAGE_BACKEND_CONF, storageBackend);
         LOG.info("Using storage backend '" + storageBackend + "'");
 

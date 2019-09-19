@@ -50,7 +50,7 @@
             <scope>provided</scope>
         </dependency>
 
-        <dependency>
+        <dependency>         <!-- Note: TODO: need to replace this with JD SDK -->
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-shaded-client</artifactId>
             <version>${hbase.version}</version>

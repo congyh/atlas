@@ -32,7 +32,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class HBaseAdmin2_0 implements AdminMask
+public class HBaseAdmin2_0 implements AdminMask // Note: 所有Admin操作都在这里, 所以只要屏蔽掉Admin操作, 就可以无需配置ZooKeeper Quorum即可使用.
 {
 
     private static final Logger log = LoggerFactory.getLogger(HBaseAdmin2_0.class);

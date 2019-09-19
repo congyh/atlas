@@ -40,7 +40,7 @@ public class HConnection2_0 implements ConnectionMask
     @Override
     public AdminMask getAdmin() throws IOException
     {
-        return new HBaseAdmin2_0(cnx.getAdmin());
+        return new HBaseAdmin2_0(cnx.getAdmin()); // Note: 这里是唯一获取Admin操作的地方
     }
 
     @Override
