@@ -15,30 +15,24 @@
 package org.janusgraph.diskstorage.hbase2;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.ColumnFamilyDescriptor;
-import org.apache.hadoop.hbase.client.ColumnFamilyDescriptorBuilder;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Delete;
-import org.apache.hadoop.hbase.client.TableDescriptor;
-import org.apache.hadoop.hbase.client.TableDescriptorBuilder;
-import org.apache.hadoop.hbase.io.compress.Compression;
 
 import java.io.IOException;
 
 public class HBaseCompat2_0 implements HBaseCompat {
 
-    @Override
-    public ColumnFamilyDescriptor setCompression(ColumnFamilyDescriptor cd, String algo) {
-        return ColumnFamilyDescriptorBuilder.newBuilder(cd).setCompressionType(Compression.Algorithm.valueOf(algo)).build();
-    }
+//    @Override
+//    public ColumnFamilyDescriptor setCompression(ColumnFamilyDescriptor cd, String algo) {
+//        return ColumnFamilyDescriptorBuilder.newBuilder(cd).setCompressionType(Compression.Algorithm.valueOf(algo)).build();
+//    }
 
-    @Override
-    public TableDescriptor newTableDescriptor(String tableName) {
-        TableName tn = TableName.valueOf(tableName);
-
-        return TableDescriptorBuilder.newBuilder(tn).build();
-    }
+//    @Override
+//    public TableDescriptor newTableDescriptor(String tableName) {
+//        TableName tn = TableName.valueOf(tableName);
+//
+//        return TableDescriptorBuilder.newBuilder(tn).build();
+//    }
 
     @Override
     public ConnectionMask createConnection(Configuration conf) throws IOException
@@ -46,11 +40,11 @@ public class HBaseCompat2_0 implements HBaseCompat {
         return new HConnection2_0(ConnectionFactory.createConnection(conf));
     }
 
-    @Override
-    public TableDescriptor addColumnFamilyToTableDescriptor(TableDescriptor tdesc, ColumnFamilyDescriptor cdesc)
-    {
-        return TableDescriptorBuilder.newBuilder(tdesc).addColumnFamily(cdesc).build();
-    }
+//    @Override
+//    public TableDescriptor addColumnFamilyToTableDescriptor(TableDescriptor tdesc, ColumnFamilyDescriptor cdesc)
+//    {
+//        return TableDescriptorBuilder.newBuilder(tdesc).addColumnFamily(cdesc).build();
+//    }
 
     @Override
     public void setTimestamp(Delete d, long timestamp)

@@ -15,9 +15,7 @@
 package org.janusgraph.diskstorage.hbase2;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.client.ColumnFamilyDescriptor;
 import org.apache.hadoop.hbase.client.Delete;
-import org.apache.hadoop.hbase.client.TableDescriptor;
 
 import java.io.IOException;
 
@@ -34,7 +32,7 @@ public interface HBaseCompat {
      *            column family to configure
      * @param algo
      */
-    public ColumnFamilyDescriptor setCompression(ColumnFamilyDescriptor cd, String algo);
+//    public ColumnFamilyDescriptor setCompression(ColumnFamilyDescriptor cd, String algo);
 
     /**
      * Create and return a HTableDescriptor instance with the given name. The
@@ -48,11 +46,11 @@ public interface HBaseCompat {
      *            HBase table name
      * @return a new table descriptor instance
      */
-    public TableDescriptor newTableDescriptor(String tableName);
+//    public TableDescriptor newTableDescriptor(String tableName);
 
     ConnectionMask createConnection(Configuration conf) throws IOException;
 
-    TableDescriptor addColumnFamilyToTableDescriptor(TableDescriptor tdesc, ColumnFamilyDescriptor cdesc);
+//    TableDescriptor addColumnFamilyToTableDescriptor(TableDescriptor tdesc, ColumnFamilyDescriptor cdesc);
 
     void setTimestamp(Delete d, long timestamp);
 }
