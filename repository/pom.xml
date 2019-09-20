@@ -137,10 +137,16 @@
             <version>${project.version}</version>
         </dependency>
 
+<!--        <dependency>-->
+<!--            <groupId>org.apache.hbase</groupId>-->
+<!--            <artifactId>hbase-client</artifactId>-->
+<!--        </dependency>-->
         <dependency>
-            <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-client</artifactId>
+            <groupId>com.jd.bdp.hbase</groupId>
+            <artifactId>sdk</artifactId>
+            <version>2.5.2</version>
         </dependency>
+
 
         <dependency>
             <groupId>org.apache.hbase</groupId>
