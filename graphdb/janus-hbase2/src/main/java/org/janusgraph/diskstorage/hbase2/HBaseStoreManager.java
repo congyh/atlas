@@ -21,45 +21,22 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.HRegionInfo;
-import org.apache.hadoop.hbase.HRegionLocation;
-import org.apache.hadoop.hbase.MasterNotRunningException;
-import org.apache.hadoop.hbase.ServerName;
-import org.apache.hadoop.hbase.TableNotEnabledException;
-import org.apache.hadoop.hbase.TableNotFoundException;
-import org.apache.hadoop.hbase.ZooKeeperConnectionException;
-import org.apache.hadoop.hbase.client.ColumnFamilyDescriptor;
-import org.apache.hadoop.hbase.client.ColumnFamilyDescriptorBuilder;
+import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Row;
-import org.apache.hadoop.hbase.client.TableDescriptor;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.util.VersionInfo;
 import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.BaseTransactionConfig;
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.diskstorage.EntryMetaData;
-import org.janusgraph.diskstorage.PermanentBackendException;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.StoreMetaData;
-import org.janusgraph.diskstorage.TemporaryBackendException;
+import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.common.DistributedStoreManager;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.ConfigNamespace;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
-import org.janusgraph.diskstorage.keycolumnvalue.StandardStoreFeatures;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
+import org.janusgraph.diskstorage.keycolumnvalue.*;
 import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
@@ -72,24 +49,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import static org.janusgraph.diskstorage.Backend.EDGESTORE_NAME;
-import static org.janusgraph.diskstorage.Backend.INDEXSTORE_NAME;
-import static org.janusgraph.diskstorage.Backend.LOCK_STORE_SUFFIX;
-import static org.janusgraph.diskstorage.Backend.SYSTEM_MGMT_LOG_NAME;
-import static org.janusgraph.diskstorage.Backend.SYSTEM_TX_LOG_NAME;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.DROP_ON_CLEAR;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDS_STORE_NAME;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME;
+import static org.janusgraph.diskstorage.Backend.*;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 /**
  * Storage Manager for HBase
@@ -464,7 +429,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                     if (metaData.contains(StoreMetaData.TTL)) {
                         cfTTLInSeconds = metaData.get(StoreMetaData.TTL);
                     }
-                    ensureColumnFamilyExists(tableName, cfName, cfTTLInSeconds);
+//                    ensureColumnFamilyExists(tableName, cfName, cfTTLInSeconds);
                 }
 
                 store = newStore;
@@ -515,8 +480,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     public List<KeyRange> getLocalKeyPartition() throws BackendException {
         List<KeyRange> result = new LinkedList<>();
         try {
-            ensureTableExists(
-                tableName, getCfNameForStoreName(GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME), 0);
+//            ensureTableExists(
+//                tableName, getCfNameForStoreName(GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME), 0);
             Map<KeyRange, ServerName> normed = normalizeKeyBounds(cnx.getRegionLocations(tableName));
 
             for (Map.Entry<KeyRange, ServerName> e : normed.entrySet()) {
@@ -694,80 +659,80 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return s;
     }
 
-    private TableDescriptor ensureTableExists(String tableName, String initialCFName, int ttlInSeconds) throws BackendException {
-        AdminMask adm = null;
+//    private TableDescriptor ensureTableExists(String tableName, String initialCFName, int ttlInSeconds) throws BackendException {
+//        AdminMask adm = null;
+//
+//        TableDescriptor desc;
+//
+//        try { // Create our table, if necessary
+//            adm = getAdminInterface();
+//            /*
+//             * Some HBase versions/impls respond badly to attempts to create a
+//             * table without at least one CF. See #661. Creating a CF along with
+//             * the table avoids HBase carping.
+//             */
+//            if (adm.tableExists(tableName)) {
+//                desc = adm.getTableDescriptor(tableName);
+//                // Check and warn if long and short cf names are mixedly used for the same table.
+//                if (shortCfNames && initialCFName.equals(shortCfNameMap.get(SYSTEM_PROPERTIES_STORE_NAME))) {
+//                    String longCFName = shortCfNameMap.inverse().get(initialCFName);
+//                    if (desc.getColumnFamily(Bytes.toBytes(longCFName)) != null) {
+//                        logger.warn("Configuration {}=true, but the table \"{}\" already has column family with long name \"{}\".",
+//                            SHORT_CF_NAMES.getName(), tableName, longCFName);
+//                        logger.warn("Check {} configuration.", SHORT_CF_NAMES.getName());
+//                    }
+//                }
+//                else if (!shortCfNames && initialCFName.equals(SYSTEM_PROPERTIES_STORE_NAME)) {
+//                    String shortCFName = shortCfNameMap.get(initialCFName);
+//                    if (desc.getColumnFamily(Bytes.toBytes(shortCFName)) != null) {
+//                        logger.warn("Configuration {}=false, but the table \"{}\" already has column family with short name \"{}\".",
+//                            SHORT_CF_NAMES.getName(), tableName, shortCFName);
+//                        logger.warn("Check {} configuration.", SHORT_CF_NAMES.getName());
+//                    }
+//                }
+//            } else {
+//                desc = createTable(tableName, initialCFName, ttlInSeconds, adm);
+//            }
+//        } catch (IOException e) {
+//            throw new TemporaryBackendException(e);
+//        } finally {
+//            IOUtils.closeQuietly(adm);
+//        }
+//
+//        return desc;
+//    }
 
-        TableDescriptor desc;
-
-        try { // Create our table, if necessary
-            adm = getAdminInterface();
-            /*
-             * Some HBase versions/impls respond badly to attempts to create a
-             * table without at least one CF. See #661. Creating a CF along with
-             * the table avoids HBase carping.
-             */
-            if (adm.tableExists(tableName)) {
-                desc = adm.getTableDescriptor(tableName);
-                // Check and warn if long and short cf names are mixedly used for the same table.
-                if (shortCfNames && initialCFName.equals(shortCfNameMap.get(SYSTEM_PROPERTIES_STORE_NAME))) {
-                    String longCFName = shortCfNameMap.inverse().get(initialCFName);
-                    if (desc.getColumnFamily(Bytes.toBytes(longCFName)) != null) {
-                        logger.warn("Configuration {}=true, but the table \"{}\" already has column family with long name \"{}\".",
-                            SHORT_CF_NAMES.getName(), tableName, longCFName);
-                        logger.warn("Check {} configuration.", SHORT_CF_NAMES.getName());
-                    }
-                }
-                else if (!shortCfNames && initialCFName.equals(SYSTEM_PROPERTIES_STORE_NAME)) {
-                    String shortCFName = shortCfNameMap.get(initialCFName);
-                    if (desc.getColumnFamily(Bytes.toBytes(shortCFName)) != null) {
-                        logger.warn("Configuration {}=false, but the table \"{}\" already has column family with short name \"{}\".",
-                            SHORT_CF_NAMES.getName(), tableName, shortCFName);
-                        logger.warn("Check {} configuration.", SHORT_CF_NAMES.getName());
-                    }
-                }
-            } else {
-                desc = createTable(tableName, initialCFName, ttlInSeconds, adm);
-            }
-        } catch (IOException e) {
-            throw new TemporaryBackendException(e);
-        } finally {
-            IOUtils.closeQuietly(adm);
-        }
-
-        return desc;
-    }
-
-    private TableDescriptor createTable(String tableName, String cfName, int ttlInSeconds, AdminMask adm) throws IOException {
-        TableDescriptor desc = compat.newTableDescriptor(tableName);
-
-        ColumnFamilyDescriptor cdesc = ColumnFamilyDescriptorBuilder.of(cfName);
-        cdesc = setCFOptions(cdesc, ttlInSeconds);
-
-        desc = compat.addColumnFamilyToTableDescriptor(desc, cdesc);
-
-        int count; // total regions to create
-        String src;
-
-        if (MIN_REGION_COUNT <= (count = regionCount)) {
-            src = "region count configuration";
-        } else if (0 < regionsPerServer &&
-                   MIN_REGION_COUNT <= (count = regionsPerServer * adm.getEstimatedRegionServerCount())) {
-            src = "ClusterStatus server count";
-        } else {
-            count = -1;
-            src = "default";
-        }
-
-        if (MIN_REGION_COUNT < count) {
-            adm.createTable(desc, getStartKey(count), getEndKey(count), count);
-            logger.debug("Created table {} with region count {} from {}", tableName, count, src);
-        } else {
-            adm.createTable(desc);
-            logger.debug("Created table {} with default start key, end key, and region count", tableName);
-        }
-
-        return desc;
-    }
+//    private TableDescriptor createTable(String tableName, String cfName, int ttlInSeconds, AdminMask adm) throws IOException {
+//        TableDescriptor desc = compat.newTableDescriptor(tableName);
+//
+//        ColumnFamilyDescriptor cdesc = ColumnFamilyDescriptorBuilder.of(cfName);
+//        cdesc = setCFOptions(cdesc, ttlInSeconds);
+//
+//        desc = compat.addColumnFamilyToTableDescriptor(desc, cdesc);
+//
+//        int count; // total regions to create
+//        String src;
+//
+//        if (MIN_REGION_COUNT <= (count = regionCount)) {
+//            src = "region count configuration";
+//        } else if (0 < regionsPerServer &&
+//                   MIN_REGION_COUNT <= (count = regionsPerServer * adm.getEstimatedRegionServerCount())) {
+//            src = "ClusterStatus server count";
+//        } else {
+//            count = -1;
+//            src = "default";
+//        }
+//
+//        if (MIN_REGION_COUNT < count) {
+//            adm.createTable(desc, getStartKey(count), getEndKey(count), count);
+//            logger.debug("Created table {} with region count {} from {}", tableName, count, src);
+//        } else {
+//            adm.createTable(desc);
+//            logger.debug("Created table {} with default start key, end key, and region count", tableName);
+//        }
+//
+//        return desc;
+//    }
 
     /**
      * <p/>
@@ -795,70 +760,70 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return StaticArrayBuffer.of(regionWidth).getBytes(0, 4);
     }
 
-    private void ensureColumnFamilyExists(String tableName, String columnFamily, int ttlInSeconds) throws BackendException {
-        AdminMask adm = null;
-        try {
-            adm = getAdminInterface();
-            TableDescriptor desc = ensureTableExists(tableName, columnFamily, ttlInSeconds);
+//    private void ensureColumnFamilyExists(String tableName, String columnFamily, int ttlInSeconds) throws BackendException {
+//        AdminMask adm = null;
+//        try {
+//            adm = getAdminInterface();
+//            TableDescriptor desc = ensureTableExists(tableName, columnFamily, ttlInSeconds);
+//
+//            Preconditions.checkNotNull(desc);
+//
+//            ColumnFamilyDescriptor cf = desc.getColumnFamily(Bytes.toBytes(columnFamily));
+//
+//            // Create our column family, if necessary
+//            if (cf == null) {
+//                try {
+//                    if (!adm.isTableDisabled(tableName)) {
+//                        adm.disableTable(tableName);
+//                    }
+//                } catch (TableNotEnabledException e) {
+//                    logger.debug("Table {} already disabled", tableName);
+//                } catch (IOException e) {
+//                    throw new TemporaryBackendException(e);
+//                }
+//
+//                try {
+//                    ColumnFamilyDescriptor cdesc = ColumnFamilyDescriptorBuilder.of(columnFamily);
+//
+//                    setCFOptions(cdesc, ttlInSeconds);
+//
+//                    adm.addColumn(tableName, cdesc);
+//
+//                    try {
+//                        logger.debug("Added HBase ColumnFamily {}, waiting for 1 sec. to propogate.", columnFamily);
+//                        Thread.sleep(1000L);
+//                    } catch (InterruptedException ie) {
+//                        throw new TemporaryBackendException(ie);
+//                    }
+//
+//                    adm.enableTable(tableName);
+//                } catch (TableNotFoundException ee) {
+//                    logger.error("TableNotFoundException", ee);
+//                    throw new PermanentBackendException(ee);
+//                } catch (org.apache.hadoop.hbase.TableExistsException ee) {
+//                    logger.debug("Swallowing exception {}", ee);
+//                } catch (IOException ee) {
+//                    throw new TemporaryBackendException(ee);
+//                }
+//            }
+//        } finally {
+//            IOUtils.closeQuietly(adm);
+//        }
+//    }
 
-            Preconditions.checkNotNull(desc);
-
-            ColumnFamilyDescriptor cf = desc.getColumnFamily(Bytes.toBytes(columnFamily));
-
-            // Create our column family, if necessary
-            if (cf == null) {
-                try {
-                    if (!adm.isTableDisabled(tableName)) {
-                        adm.disableTable(tableName);
-                    }
-                } catch (TableNotEnabledException e) {
-                    logger.debug("Table {} already disabled", tableName);
-                } catch (IOException e) {
-                    throw new TemporaryBackendException(e);
-                }
-
-                try {
-                    ColumnFamilyDescriptor cdesc = ColumnFamilyDescriptorBuilder.of(columnFamily);
-
-                    setCFOptions(cdesc, ttlInSeconds);
-
-                    adm.addColumn(tableName, cdesc);
-
-                    try {
-                        logger.debug("Added HBase ColumnFamily {}, waiting for 1 sec. to propogate.", columnFamily);
-                        Thread.sleep(1000L);
-                    } catch (InterruptedException ie) {
-                        throw new TemporaryBackendException(ie);
-                    }
-
-                    adm.enableTable(tableName);
-                } catch (TableNotFoundException ee) {
-                    logger.error("TableNotFoundException", ee);
-                    throw new PermanentBackendException(ee);
-                } catch (org.apache.hadoop.hbase.TableExistsException ee) {
-                    logger.debug("Swallowing exception {}", ee);
-                } catch (IOException ee) {
-                    throw new TemporaryBackendException(ee);
-                }
-            }
-        } finally {
-            IOUtils.closeQuietly(adm);
-        }
-    }
-
-    private ColumnFamilyDescriptor setCFOptions(ColumnFamilyDescriptor cdesc, int ttlInSeconds) {
-        ColumnFamilyDescriptor ret = null;
-
-        if (null != compression && !compression.equals(COMPRESSION_DEFAULT)) {
-            ret = compat.setCompression(cdesc, compression);
-        }
-
-        if (ttlInSeconds > 0) {
-            ret = ColumnFamilyDescriptorBuilder.newBuilder(cdesc).setTimeToLive(ttlInSeconds).build();
-        }
-
-        return ret;
-    }
+//    private ColumnFamilyDescriptor setCFOptions(ColumnFamilyDescriptor cdesc, int ttlInSeconds) {
+//        ColumnFamilyDescriptor ret = null;
+//
+//        if (null != compression && !compression.equals(COMPRESSION_DEFAULT)) {
+//            ret = compat.setCompression(cdesc, compression);
+//        }
+//
+//        if (ttlInSeconds > 0) {
+//            ret = ColumnFamilyDescriptorBuilder.newBuilder(cdesc).setTimeToLive(ttlInSeconds).build();
+//        }
+//
+//        return ret;
+//    }
 
     /**
      * Convert JanusGraph internal Mutation representation into HBase native commands.

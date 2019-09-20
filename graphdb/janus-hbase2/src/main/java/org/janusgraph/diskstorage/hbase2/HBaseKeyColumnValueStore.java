@@ -245,11 +245,11 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
             throw new PermanentBackendException(e);
         }
 
-        if (startKey != null)
-            scan.withStartRow(startKey);
-
-        if (endKey != null)
-            scan.withStopRow(endKey);
+//        if (startKey != null)
+//            scan.withStartRow(startKey);
+//
+//        if (endKey != null)
+//            scan.withStopRow(endKey);
 
         if (columnSlice != null) {
             filters.addFilter(getFilter(columnSlice));
