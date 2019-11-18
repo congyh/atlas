@@ -18,7 +18,7 @@ import ads_hive as adshive
 from HiveTask import HiveTask as ht
 from SparkTask import SparkTask as st
 
-__all__ = ['HiveTask', 'SparkTask', 'ads_hive']
+__all__ = ['HiveTask', 'SparkTask', 'ads_hive', 'add_hook_in_sql']
 
 
 sql_head = """
@@ -50,6 +50,10 @@ class Process(adshive.Process):
         """Add atlas hive hook before execute in ads_hive.Process"""
         hql = sql_head + hql
         super().execute(schema_name, table_name,hql, *args, **kwargs)
+
+
+def add_hook_in_sql(sql):
+    return sql_head + sql
 
 
 adshive.Process = Process
