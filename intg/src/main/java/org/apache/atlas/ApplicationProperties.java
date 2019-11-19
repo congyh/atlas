@@ -134,8 +134,9 @@ public final class ApplicationProperties extends PropertiesConfiguration {
 
         Configuration configuration = appProperties.interpolatedConfiguration();
 
-        logConfiguration(configuration);
-        printConfiguration(configuration);
+        // Turn off log to prevent interfering hive output.
+        // logConfiguration(configuration);
+        // printConfiguration(configuration);
         return configuration;
     }
 
