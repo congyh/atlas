@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
+# coding:utf-8
 """
 AtlasHook for Integrating Hive with Apache Atlas.
 
-WARNING: This script is only used for adapting common script in JD company like:
+The script itself is python2.x and python 3.x compatible,
+but the following module are only supportted in python3 environment:
 
 - HiveTask.py
 - SparkTask.py
@@ -10,16 +12,12 @@ WARNING: This script is only used for adapting common script in JD company like:
 
 You should refer to the origin script to check the usage for specific method.
 """
-import os,sys
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
-sys.path.append(os.getenv('HIVE_TASK'))
-sys.path.append(os.getenv("CODELIB")+"/mart_szad")
-import ads_hive as adshive
-from HiveTask import HiveTask as ht
-from SparkTask import SparkTask as st
-
-__all__ = ['HiveTask', 'SparkTask', 'ads_hive', 'add_hook_in_sql']
-
+import os
+import sys
 
 sql_head = """
     ADD jar hdfs://ns1018/user/jd_ad/ads_app/data_lineage/hive/atlas-plugin-classloader-2.0.0.jar;
@@ -31,30 +29,38 @@ sql_head = """
     """
 
 
-class HiveTask(ht):
-    def exec_sql(self, schema_name, sql, *args, **kwargs):
-        """Add atlas hive hook before exec_sql in HiveTask"""
-        sql = sql_head + sql
-        super().exec_sql(schema_name, sql, *args, **kwargs)
-
-
-class SparkTask(st):
-    def exec_sql(self, schema_name, sql, *args, **kwargs):
-        """Add atlas hive hook before exec_sql in SparkTask"""
-        sql = sql_head + sql
-        super().exec_sql(schema_name, sql, *args, **kwargs)
-
-
-class Process(adshive.Process):
-    def execute(self, schema_name, table_name,hql, *args, **kwargs):
-        """Add atlas hive hook before execute in ads_hive.Process"""
-        hql = sql_head + hql
-        super().execute(schema_name, table_name,hql, *args, **kwargs)
-
-
 def add_hook_in_sql(sql):
     return sql_head + sql
 
 
-adshive.Process = Process
-ads_hive = adshive
+if sys.version_info[0] > 2:
+    sys.path.append(os.getenv('HIVE_TASK'))
+    sys.path.append(os.getenv("CODELIB")+"/mart_szad")
+    import ads_hive as adshive
+    from HiveTask import HiveTask as ht
+    from SparkTask import SparkTask as st
+
+    class HiveTask(ht):
+        def exec_sql(self, schema_name, sql, *args, **kwargs):
+            """Add atlas hive hook before exec_sql in HiveTask"""
+            sql = sql_head + sql
+            super(HiveTask, self).exec_sql(schema_name, sql, *args, **kwargs)
+
+    class SparkTask(st):
+        def exec_sql(self, schema_name, sql, *args, **kwargs):
+            """Add atlas hive hook before exec_sql in SparkTask"""
+            sql = sql_head + sql
+            super(SparkTask, self).exec_sql(schema_name, sql, *args, **kwargs)
+
+    class Process(adshive.Process):
+        def execute(self, schema_name, table_name,hql, *args, **kwargs):
+            """Add atlas hive hook before execute in ads_hive.Process"""
+            hql = sql_head + hql
+            super(Process, self).execute(schema_name, table_name,hql, *args, **kwargs)
+
+    adshive.Process = Process
+    ads_hive = adshive
+
+    __all__ = ['HiveTask', 'SparkTask', 'ads_hive', 'add_hook_in_sql']
+else:
+    __all__ = ['add_hook_in_sql']
