@@ -33,6 +33,7 @@ from __future__ import print_function
 
 import os
 import sys
+import socket
 
 sql_head = """
     ADD jar hdfs://ns1018/user/jd_ad/ads_app/data_lineage/hive/atlas-plugin-classloader-2.0.0.jar;
@@ -42,6 +43,12 @@ sql_head = """
     SET hive.exec.post.hooks=org.apache.hadoop.hive.ql.hooks.PostExecutePrinter,org.apache.atlas.hive.hook.HiveHook;
 
     """
+
+try:
+    if socket.gethostbyname(socket.gethostname()) == "10.198.47.106":
+        sql_head = ""
+except Exception as e:
+    print("Exception on get host: ", e)
 
 
 def add_hook_in_sql(sql):
