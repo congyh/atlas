@@ -303,7 +303,7 @@ public class EntityGraphMapper {
         AtlasClassification classification = new AtlasClassification("OnlineDate", attributes);
         classification.setEntityGuid(entity.getGuid());
         classification.setEntityStatus(ACTIVE);
-        classification.setPropagate(true);
+        classification.setPropagate(false);
         classification.setValidityPeriods(new ArrayList<>());
         classification.setRemovePropagationsOnEntityDelete(false);
 
