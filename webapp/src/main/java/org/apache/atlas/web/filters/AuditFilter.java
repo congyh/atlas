@@ -79,7 +79,7 @@ public class AuditFilter implements Filter {
         final String              oldName            = currentThread.getName();
         final String              user               = AtlasAuthorizationUtils.getCurrentUserName();
         final Set<String>         userGroups         = AtlasAuthorizationUtils.getCurrentUserGroups();
-        final String              deleteType         = httpRequest.getParameter("deleteType");
+        final String              deleteType         = httpRequest.getParameter("deleteType"); // Note: get deletetype form request parameter
 
         try {
             currentThread.setName(formatName(oldName, requestId));
@@ -91,7 +91,7 @@ public class AuditFilter implements Filter {
 
             if (StringUtils.isNotEmpty(deleteType)) {
                 if (deleteTypeOverrideEnabled) {
-                    requestContext.setDeleteType(DeleteType.from(deleteType));
+                    requestContext.setDeleteType(DeleteType.from(deleteType)); // Note: hard => DeleteType.HARD
                 } else {
                     LOG.warn("Override of deleteType is not enabled. Ignoring parameter deleteType={}, in request from user={}", deleteType, user);
                 }
